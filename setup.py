@@ -34,5 +34,6 @@ setup(name="pylibacl",
                              define_macros=macros,
                              )],
       data_files=[("/usr/share/doc/pylibacl-%s" % version,
-                   ["README","IMPLEMENTATION", "PLATFORMS"])],
+                   ["README","IMPLEMENTATION", "PLATFORMS",
+                    "posix1e.html", "posix1e.txt"])],
       )

@@ -55,6 +55,11 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         return -1;
     }
 
+    /* Free the old acl_t without checking for error, we don't
+     * care right now */
+    if(self->ob_acl != NULL)
+        acl_free(self->ob_acl);
+
     if(file != NULL)
         self->ob_acl = acl_get_file(file, ACL_TYPE_ACCESS);
     else if(text != NULL)
@@ -65,6 +70,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         self->ob_acl = acl_dup(thesrc->ob_acl);
     else
         self->ob_acl = acl_init(0);
+
     if(self->ob_acl == NULL) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
@@ -232,14 +238,6 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
 static char __acltype_doc__[] = \
 "Type which represents a POSIX ACL\n" \
 "\n" \
-"Depending on the operating system support for POSIX.1e, \n" \
-"this type will have more or less capabilities:\n" \
-"  - level 1, only basic support, you can create\n" \
-"    ACLs from files and text descriptions;\n" \
-"    once created, the type is immutable\n" \
-"  - level 2, complete support, you can alter\n"\
-"    the ACL once it is created\n" \
-"\n" \
 "Parameters:\n" \
 "  Only one keword parameter should be provided:\n"
 "  - file=\"...\", meaning create ACL representing\n"
@@ -347,6 +345,39 @@ static char __posix1e_doc__[] = \
 "POSIX.1e ACLs manipulation\n" \
 "\n" \
 "This module provides support for manipulating POSIX.1e ACLS\n" \
+"\n" \
+"Depending on the operating system support for POSIX.1e, \n" \
+"the ACL type will have more or less capabilities:\n" \
+"  - level 1, only basic support, you can create\n" \
+"    ACLs from files and text descriptions;\n" \
+"    once created, the type is immutable\n" \
+"  - level 2, complete support, you can alter\n"\
+"    the ACL once it is created\n" \
+"\n" \
+"Also, in level 2, more types will be available, corresponding\n" \
+"to acl_entry_t, acl_permset_t, etc.\n" \
+"\n" \
+"Example:\n" \
+">>> import posix1e\n" \
+">>> acl1 = posix1e.ACL(file=\"file.txt\") \n" \
+">>> print acl1\n" \
+"user::rw-\n" \
+"group::rw-\n" \
+"other::r--\n" \
+"\n" \
+">>> b = posix1e.ACL(text=\"u::rx,g::-,o::-\")\n" \
+">>> print b\n" \
+"user::r-x\n" \
+"group::---\n" \
+"other::---\n" \
+"\n" \
+">>> b.applyto(\"file.txt\")\n" \
+">>> print posix1e.ACL(file=\"file.txt\")\n" \
+"user::r-x\n" \
+"group::---\n" \
+"other::---\n" \
+"\n" \
+">>>\n" \
 ;
 
 DL_EXPORT(void) initposix1e(void) {

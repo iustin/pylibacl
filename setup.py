@@ -20,7 +20,7 @@ else:
 long_desc = """This is a C extension module for Python which
 implements POSIX ACLs manipulation. It is a wrapper on top
 of the systems's acl C library - see acl(5)."""
-version = "0.1"
+version = "0.2"
 setup(name="pylibacl",
       version=version,
       description="POSIX.1e ACLs for python",

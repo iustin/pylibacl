@@ -1,4 +1,4 @@
-The IEEE 1003.1e draft 17 ("POSIX.1e") describes a set of 17
+The IEEE 1003.1e draft 17 ("POSIX.1e") describes a set of 28
 functions. These are grouped into three groups, based on their
 portability: 
     - first group, the most portable one. All systems which claim to
@@ -24,9 +24,7 @@ Thus we have the level of compliance. Depending on whether the system
 library support the second group, you get some extra methods for the
 ACL object.
 
-
 Internal structure
-
     The POSIX draft has the following stuff (correct me if I'm wrong):
         - an ACL is denoted by acl_t
         - an ACL contains many acl_entry_t, these are the individual entries

@@ -3,15 +3,21 @@
 
 #include <Python.h>
 
+#ifdef HAVE_LINUX
+#include "os_linux.c"
+#endif
+
 staticforward PyTypeObject ACL_Type;
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args);
 static PyObject* ACL_valid(PyObject* obj, PyObject* args);
+
 #ifdef HAVE_LEVEL2
 static PyObject* ACL_get_state(PyObject *obj, PyObject* args);
 static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
 
 staticforward PyTypeObject Entry_Type;
 staticforward PyTypeObject Permset_Type;
+static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds);
 #endif
 
 typedef struct {
@@ -53,29 +59,21 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
 /* Initialization of a new ACL instance */
 static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     ACL_Object* self = (ACL_Object*) obj;
-    static char *kwlist[] = { "file", "fd", "text", "acl", NULL };
+    static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
     char *file = NULL;
+    char *filedef = NULL;
     char *text = NULL;
     int fd = -1;
     ACL_Object* thesrc = NULL;
-    int tmp;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "|sisO!", kwlist,
-                                     &file, &fd, &text, &ACL_Type, &thesrc))
-        return -1;
-    tmp = 0;
-    if(file != NULL)
-        tmp++;
-    if(text != NULL)
-        tmp++;
-    if(fd != -1)
-        tmp++;
-    if(thesrc != NULL)
-        tmp++;
-    if(tmp > 1) {
-        PyErr_SetString(PyExc_ValueError, "a maximum of one argument must be passed");
+    if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||
+       (keywds != NULL && PyDict_Check(keywds) && PyDict_Size(keywds) > 1)) {
+        PyErr_SetString(PyExc_ValueError, "a max of one keyword argument must be passed");
         return -1;
     }
+    if(!PyArg_ParseTupleAndKeywords(args, keywds, "|sisO!s", kwlist,
+                                     &file, &fd, &text, &ACL_Type, &thesrc, &filedef))
+        return -1;
 
     /* Free the old acl_t without checking for error, we don't
      * care right now */
@@ -90,6 +88,8 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         self->acl = acl_get_fd(fd);
     else if(thesrc != NULL)
         self->acl = acl_dup(thesrc->acl);
+    else if(filedef != NULL)
+        self->acl = acl_get_file(filedef, ACL_TYPE_DEFAULT);
     else
         self->acl = acl_init(0);
 
@@ -109,7 +109,7 @@ static void ACL_dealloc(PyObject* obj) {
 
     if (have_error)
         PyErr_Fetch(&err_type, &err_value, &err_traceback);
-    if(acl_free(self->acl) != 0)
+    if(self->acl != NULL && acl_free(self->acl) != 0)
         PyErr_WriteUnraisable(obj);
     if (have_error)
         PyErr_Restore(err_type, err_value, err_traceback);
@@ -141,21 +141,20 @@ static char __applyto_doc__[] = \
 "Parameters:\n" \
 "  - either a filename or a file-like object or an integer; this\n" \
 "    represents the filesystem object on which to act\n" \
+"  - optional flag representing the type of ACL to set, either\n" \
+"    ACL_TYPE_ACCESS (default) or ACL_TYPE_DEFAULT\n" \
 ;
 
 /* Applyes the ACL to a file */
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *myarg;
-    int type_default = 0;
     acl_type_t type = ACL_TYPE_ACCESS;
     int nret;
     int fd;
 
-    if (!PyArg_ParseTuple(args, "O|i", &myarg, &type_default))
+    if (!PyArg_ParseTuple(args, "O|i", &myarg, &type))
         return NULL;
-    if(type_default)
-        type = ACL_TYPE_DEFAULT;
 
     if(PyString_Check(myarg)) {
         char *filename = PyString_AS_STRING(myarg);
@@ -189,7 +188,13 @@ static char __valid_doc__[] = \
 "\n" \
 "All user ID qualifiers must be unique among all entries of ACL_USER tag\n" \
 "type, and all group IDs must be unique among all entries of ACL_GROUP tag\n" \
-"type." \
+"type.\n" \
+"\n" \
+"The method will return 1 for a valid ACL and 0 for an invalid one.\n" \
+"This has been chosen because the specification for acl_valid in POSIX.1e\n" \
+"documents only one possible value for errno in case of an invalid ACL, \n" \
+"so we can't differentiate between classes of errors. Other suggestions \n" \
+"are welcome.\n" \
 ;
 
 /* Checks the ACL for validity */
@@ -197,12 +202,12 @@ static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
 
     if(acl_valid(self->acl) == -1) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+        Py_INCREF(Py_False);
+        return Py_False;
+    } else {
+        Py_INCREF(Py_True);
+        return Py_True;
     }
-
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
 }
 
 #ifdef HAVE_LEVEL2
@@ -256,6 +261,9 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     return Py_None;
 }
 
+/* tp_iter for the ACL type; since it can be iterated only
+ * destructively, the type is its iterator
+ */
 static PyObject* ACL_iter(PyObject *obj) {
     ACL_Object *self = (ACL_Object*)obj;
     self->entry_id = ACL_FIRST_ENTRY;
@@ -263,16 +271,18 @@ static PyObject* ACL_iter(PyObject *obj) {
     return obj;
 }
 
+/* the tp_iternext function for the ACL type */
 static PyObject* ACL_iternext(PyObject *obj) {
     ACL_Object *self = (ACL_Object*)obj;
     acl_entry_t the_entry_t;
     Entry_Object *the_entry_obj;
     int nerr;
     
-    if((nerr = acl_get_entry(self->acl, self->entry_id, &the_entry_t)) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+    nerr = acl_get_entry(self->acl, self->entry_id, &the_entry_t);
     self->entry_id = ACL_NEXT_ENTRY;
-    if(nerr == 0) {
+    if(nerr == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    else if(nerr == 0) {
         /* Docs says this is not needed */
         /*PyErr_SetObject(PyExc_StopIteration, Py_None);*/
         return NULL;
@@ -288,6 +298,32 @@ static PyObject* ACL_iternext(PyObject *obj) {
     Py_INCREF(obj); /* For the reference we have in entry->parent */
 
     return (PyObject*)the_entry_obj;
+}
+
+static char __ACL_delentry_doc__[] = \
+"Deletes an entry from the ACL.\n" \
+"\n" \
+"Note: Only with level 2\n" \
+"Parameters:\n" \
+" - the Entry object which should be deleted; note that after\n" \
+"   this function is called, that object is unusable any longer\n" \
+"   and should be deleted\n" \
+;
+
+/* Deletes an entry from the ACL */
+static PyObject* ACL_delentry(PyObject *obj, PyObject *args) {
+    ACL_Object *self = (ACL_Object*)obj;
+    Entry_Object *e;
+
+    if (!PyArg_ParseTuple(args, "O!", &Entry_Type, &e))
+        return NULL;
+
+    if(acl_delete_entry(self->acl, e->entry) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 /* Creation of a new Entry instance */
@@ -364,7 +400,7 @@ static PyObject* Entry_str(PyObject *obj) {
         qualifier = 0;
     }
     
-    format = PyString_FromString("ACL entry for %s, rights: <unknown>");
+    format = PyString_FromString("ACL entry for %s");
     if(format == NULL)
         return NULL;
     list = PyTuple_New(1);
@@ -377,9 +413,9 @@ static PyObject* Entry_str(PyObject *obj) {
     } else if(tag == ACL_OTHER) {
         PyTuple_SetItem(list, 0, PyString_FromString("the others"));
     } else if(tag == ACL_USER) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("user %u", qualifier));
+        PyTuple_SetItem(list, 0, PyString_FromFormat("user with uid %d", qualifier));
     } else if(tag == ACL_GROUP) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("group %u", qualifier));
+        PyTuple_SetItem(list, 0, PyString_FromFormat("group with gid %d", qualifier));
     } else if(tag == ACL_MASK) {
         PyTuple_SetItem(list, 0, PyString_FromString("the mask"));
     } else {
@@ -391,6 +427,7 @@ static PyObject* Entry_str(PyObject *obj) {
     return ret;
 }
 
+/* Sets the tag type of the entry */
 static int Entry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
 
@@ -413,6 +450,7 @@ static int Entry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
     return 0;
 }
 
+/* Returns the tag type of the entry */
 static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     acl_tag_t value;
@@ -429,6 +467,9 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
     return PyInt_FromLong(value);
 }
 
+/* Sets the qualifier (either uid_t or gid_t) for the entry,
+ * usable only if the tag type if ACL_USER or ACL_GROUP
+ */
 static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     int uidgid;
@@ -453,6 +494,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     return 0;
 }
 
+/* Returns the qualifier of the entry */
 static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     void *p;
@@ -472,12 +514,79 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     return PyInt_FromLong(value);
 }
 
+/* Returns the parent ACL of the entry */
 static PyObject* Entry_get_parent(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     
     Py_INCREF(self->parent_acl);
     return self->parent_acl;
 }
+
+/* Returns the a new Permset representing the permset of the entry 
+ * FIXME: Should return a new reference to the same object, which
+ * should be created at init time!
+*/
+static PyObject* Entry_get_permset(PyObject *obj, void* arg) {
+    Entry_Object *self = (Entry_Object*)obj;
+    PyObject *p;
+    Permset_Object *ps;
+
+    p = Permset_new(&Permset_Type, NULL, NULL);
+    if(p == NULL)
+        return NULL;
+    ps = (Permset_Object*)p;
+    if(acl_get_permset(self->entry, &ps->permset) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+    ps->parent_entry = obj;
+    Py_INCREF(obj);
+
+    return (PyObject*)p;
+}
+
+/* Sets the permset of the entry to the passed Permset */
+static int Entry_set_permset(PyObject* obj, PyObject* value, void* arg) {
+    Entry_Object *self = (Entry_Object*)obj;
+    Permset_Object *p;
+
+    if(!PyObject_IsInstance(value, (PyObject*)&Permset_Type)) {
+        PyErr_SetString(PyExc_TypeError, "argument 1 must be posix1e.Permset");
+        return -1;
+    }
+    p = (Permset_Object*)value;
+    if(acl_set_permset(self->entry, p->permset) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+    return 0;
+}
+
+static char __Entry_copy_doc__[] = \
+"Copy an ACL entry.\n" \
+"\n" \
+"This method sets all the parameters to those of another\n" \
+"entry, even one of another's ACL\n" \
+"Parameters:\n" \
+" - src, instance of type Entry\n" \
+;
+
+/* Sets all the entry parameters to another's entry */
+static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
+    Entry_Object *self = (Entry_Object*)obj;
+    Entry_Object *other;
+    
+    if(!PyArg_ParseTuple(args, "O!", &Entry_Type, &other))
+        return NULL;
+
+    if(acl_copy_entry(self->entry, other->entry) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/**** Permset type *****/
 
 /* Creation of a new Permset instance */
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
@@ -529,6 +638,22 @@ static void Permset_dealloc(PyObject* obj) {
     PyObject_DEL(self);
 }
 
+/* Permset string representation */
+static PyObject* Permset_str(PyObject *obj) {
+    Permset_Object *self = (Permset_Object*) obj;
+    char pstr[3];
+
+    pstr[0] = get_perm(self->permset, ACL_READ) ? 'r' : '-';
+    pstr[1] = get_perm(self->permset, ACL_WRITE) ? 'w' : '-';
+    pstr[2] = get_perm(self->permset, ACL_EXECUTE) ? 'x' : '-';
+    return PyString_FromStringAndSize(pstr, 3);
+}
+
+static char __Permset_clear_doc__[] = \
+"Clear all permissions from the permission set.\n" \
+;
+
+/* Clears all permissions from the permset */
 static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
     Permset_Object *self = (Permset_Object*) obj;
 
@@ -540,21 +665,59 @@ static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
     return Py_None;
 }
 
+static PyObject* Permset_get_right(PyObject *obj, void* arg) {
+    Permset_Object *self = (Permset_Object*) obj;
+
+    if(get_perm(self->permset, (int)arg)) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    } else {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+}
+
+static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
+    Permset_Object *self = (Permset_Object*) obj;
+    int on;
+    int nerr;
+
+    if(!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_ValueError, "a maximum of one argument must be passed");
+        return -1;
+    }        
+    on = PyInt_AsLong(value);
+    if(on)
+        nerr = acl_add_perm(self->permset, (int)arg);
+    else
+        nerr = acl_delete_perm(self->permset, (int)arg);
+    if(nerr == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+    return 0;
+}
+
 #endif
 
-static char __acltype_doc__[] = \
+static char __ACL_Type_doc__[] = \
 "Type which represents a POSIX ACL\n" \
 "\n" \
 "Parameters:\n" \
 "  Only one keword parameter should be provided:\n"
 "  - file=\"...\", meaning create ACL representing\n"
-"    the ACL of that file\n" \
+"    the access ACL of that file\n" \
+"  - filedef=\"...\", meaning create ACL representing\n"
+"    the default ACL of that directory\n" \
 "  - fd=<int>, meaning create ACL representing\n" \
-"    the ACL of that file descriptor\n" \
+"    the access ACL of that file descriptor\n" \
 "  - text=\"...\", meaning create ACL from a \n" \
 "    textual description\n" \
 "  - acl=<ACL instance>, meaning create a copy\n" \
 "    of an existing ACL instance\n" \
+"If no parameters are passed, create an empty ACL; this\n" \
+"makes sense only when your OS supports ACL modification\n" \
+" (i.e. it implements full POSIX.1e support)\n" \
 ;
 
 /* ACL type methods */
@@ -564,6 +727,7 @@ static PyMethodDef ACL_methods[] = {
 #ifdef HAVE_LEVEL2
     {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
     {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
+    {"delentry", ACL_delentry, METH_VARARGS, __ACL_delentry_doc__},
 #endif
     {NULL, NULL, 0, NULL}
 };
@@ -592,7 +756,7 @@ static PyTypeObject ACL_Type = {
     0,                  /* tp_setattro */
     0,                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __acltype_doc__,    /* tp_doc */
+    __ACL_Type_doc__,   /* tp_doc */
     0,                  /* tp_traverse */
     0,                  /* tp_clear */
     0,                  /* tp_richcompare */
@@ -621,6 +785,7 @@ static PyTypeObject ACL_Type = {
 
 /* Entry type methods */
 static PyMethodDef Entry_methods[] = {
+    {"copy", Entry_copy, METH_VARARGS, __Entry_copy_doc__},
     {NULL, NULL, 0, NULL}
 };
 
@@ -649,15 +814,30 @@ static char __Entry_parent_doc__[] = \
 "The parent ACL of this entry\n" \
 ;
 
+static char __Entry_permset_doc__[] = \
+"The permission set of this ACL entry\n" \
+;
+
 /* Entry getset */
 static PyGetSetDef Entry_getsets[] = {
     {"tag_type", Entry_get_tag_type, Entry_set_tag_type, __Entry_tagtype_doc__},
     {"qualifier", Entry_get_qualifier, Entry_set_qualifier, __Entry_qualifier_doc__},
     {"parent", Entry_get_parent, NULL, __Entry_parent_doc__},
+    {"permset", Entry_get_permset, Entry_set_permset, __Entry_permset_doc__},
     {NULL}
 };
 
-/* The definition of the ACL Entry Type */
+static char __Entry_Type_doc__[] = \
+"Type which represents an entry in an ACL.\n" \
+"\n" \
+"The type exists only if the OS has full support for POSIX.1e\n" \
+"Can be created either by:\n" \
+"  e = posix1e.Entry(myACL) # this creates a new entry in the ACL\n" \
+"or by:\n" \
+"  for entry in myACL:\n" \
+"      print entry\n" \
+;
+/* The definition of the Entry Type */
 static PyTypeObject Entry_Type = {
     PyObject_HEAD_INIT(NULL)
     0,
@@ -680,37 +860,63 @@ static PyTypeObject Entry_Type = {
     0,                  /* tp_setattro */
     0,                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __acltype_doc__,    /* tp_doc */
+    __Entry_Type_doc__, /* tp_doc */
     0,                  /* tp_traverse */
     0,                  /* tp_clear */
     0,                  /* tp_richcompare */
     0,                  /* tp_weaklistoffset */
     0,                  /* tp_iter */
     0,                  /* tp_iternext */
-    Entry_methods,   /* tp_methods */
+    Entry_methods,      /* tp_methods */
     0,                  /* tp_members */
-    Entry_getsets,   /* tp_getset */
+    Entry_getsets,      /* tp_getset */
     0,                  /* tp_base */
     0,                  /* tp_dict */
     0,                  /* tp_descr_get */
     0,                  /* tp_descr_set */
     0,                  /* tp_dictoffset */
-    Entry_init,      /* tp_init */
+    Entry_init,         /* tp_init */
     0,                  /* tp_alloc */
-    Entry_new,       /* tp_new */
+    Entry_new,          /* tp_new */
 };
 
-static char __Permset_clear_doc__[] = \
-"Clear all permissions in the set\n" \
-;
-
-/* Entry type methods */
+/* Permset type methods */
 static PyMethodDef Permset_methods[] = {
     {"clear", Permset_clear, METH_NOARGS, __Permset_clear_doc__, },
     {NULL, NULL, 0, NULL}
 };
 
-/* The definition of the ACL Entry Type */
+static char __Permset_execute_doc__[] = \
+"Execute permsission\n" \
+;
+
+static char __Permset_read_doc__[] = \
+"Read permsission\n" \
+;
+
+static char __Permset_write_doc__[] = \
+"Write permsission\n" \
+;
+
+/* Permset getset */
+static PyGetSetDef Permset_getsets[] = {
+    {"execute", Permset_get_right, Permset_set_right, __Permset_execute_doc__, (void*)ACL_EXECUTE},
+    {"read", Permset_get_right, Permset_set_right, __Permset_read_doc__, (void*)ACL_READ},
+    {"write", Permset_get_right, Permset_set_right, __Permset_write_doc__, (void*)ACL_WRITE},
+    {NULL}
+};
+
+static char __Permset_Type_doc__[] = \
+"Type which represents the permission set in an ACL entry\n" \
+"\n" \
+"The type exists only if the OS has full support for POSIX.1e\n" \
+"Can be created either by:\n" \
+"  perms = myEntry.permset\n" \
+"or by:\n" \
+"  perms = posix1e.Permset(myEntry)\n" \
+;
+
+/* The definition of the Permset Type */
 static PyTypeObject Permset_Type = {
     PyObject_HEAD_INIT(NULL)
     0,
@@ -722,18 +928,18 @@ static PyTypeObject Permset_Type = {
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
     0,                  /* tp_compare */
-    0, //Entry_repr,      /* tp_repr */
+    0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */
     0,                  /* tp_as_mapping */
     0,                  /* tp_hash */
     0,                  /* tp_call */
-    0,                  /* tp_str */
+    Permset_str,        /* tp_str */
     0,                  /* tp_getattro */
     0,                  /* tp_setattro */
     0,                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __acltype_doc__,    /* tp_doc */
+    __Permset_Type_doc__,/* tp_doc */
     0,                  /* tp_traverse */
     0,                  /* tp_clear */
     0,                  /* tp_richcompare */
@@ -742,7 +948,7 @@ static PyTypeObject Permset_Type = {
     0,                  /* tp_iternext */
     Permset_methods,    /* tp_methods */
     0,                  /* tp_members */
-    0,      /* tp_getset */
+    Permset_getsets,    /* tp_getset */
     0,                  /* tp_base */
     0,                  /* tp_dict */
     0,                  /* tp_descr_get */
@@ -804,8 +1010,8 @@ static char __posix1e_doc__[] = \
 "  - level 2, complete support, you can alter\n"\
 "    the ACL once it is created\n" \
 "\n" \
-"Also, in level 2, more types will be available, corresponding\n" \
-"to acl_entry_t, acl_permset_t, etc.\n" \
+"Also, in level 2, more types are available, corresponding\n" \
+"to acl_entry_t (Entry type), acl_permset_t (Permset type).\n" \
 "\n" \
 "Example:\n" \
 ">>> import posix1e\n" \
@@ -830,7 +1036,7 @@ static char __posix1e_doc__[] = \
 ">>>\n" \
 ;
 
-DL_EXPORT(void) initposix1e(void) {
+void initposix1e(void) {
     PyObject *m, *d;
 
     ACL_Type.ob_type = &PyType_Type;
@@ -857,6 +1063,12 @@ DL_EXPORT(void) initposix1e(void) {
     if (PyDict_SetItemString(d, "ACL",
                              (PyObject *) &ACL_Type) < 0)
         return;
+
+    /* 23.3.6 acl_type_t values */
+    PyModule_AddIntConstant(m, "ACL_TYPE_ACCESS", ACL_TYPE_ACCESS);
+    PyModule_AddIntConstant(m, "ACL_TYPE_DEFAULT", ACL_TYPE_DEFAULT);
+
+
 #ifdef HAVE_LEVEL2
     Py_INCREF(&Entry_Type);
     if (PyDict_SetItemString(d, "Entry",
@@ -881,10 +1093,6 @@ DL_EXPORT(void) initposix1e(void) {
     PyModule_AddIntConstant(m, "ACL_GROUP", ACL_GROUP);
     PyModule_AddIntConstant(m, "ACL_MASK", ACL_MASK);
     PyModule_AddIntConstant(m, "ACL_OTHER", ACL_OTHER);
-
-    /* 23.3.6 acl_type_t values */    
-    PyModule_AddIntConstant(m, "ACL_TYPE_ACCESS", ACL_TYPE_ACCESS);
-    PyModule_AddIntConstant(m, "ACL_TYPE_DEFAULT", ACL_TYPE_DEFAULT);
 
 #endif
 }

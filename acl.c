@@ -16,20 +16,21 @@ typedef struct {
     acl_t ob_acl;
 } ACLObject;
 
-/* ACL type methods */
-static PyMethodDef ACL_methods[] = {
-    {"applyto", ACL_applyto, METH_VARARGS, "Apply the ACL to a file or filehandle."},
-    {"valid", ACL_valid, METH_NOARGS, "Test the ACL for validity."},
-#ifdef HAVE_LEVEL2
-    {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
-    {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
-#endif
-    {NULL, NULL, 0, NULL}
-};
-
 /* Creation of a new ACL instance */
-static PyObject* ACL_new(PyObject* self, PyObject* args, PyObject *keywds) {
-    ACLObject* theacl;
+static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+    PyObject* newacl;
+
+    newacl = type->tp_alloc(type, 0);
+
+    if(newacl != NULL)
+        ((ACLObject*)newacl)->ob_acl = NULL;
+
+    return newacl;
+}
+
+/* Initialization of a new ACL instance */
+static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
+    ACLObject* self = (ACLObject*) obj;
     static char *kwlist[] = { "file", "fd", "text", "acl", NULL };
     char *file = NULL;
     char *text = NULL;
@@ -39,7 +40,7 @@ static PyObject* ACL_new(PyObject* self, PyObject* args, PyObject *keywds) {
 
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "|sisO!", kwlist,
                                      &file, &fd, &text, &ACLType, &thesrc))
-        return NULL;
+        return -1;
     tmp = 0;
     if(file != NULL)
         tmp++;
@@ -51,26 +52,25 @@ static PyObject* ACL_new(PyObject* self, PyObject* args, PyObject *keywds) {
         tmp++;
     if(tmp > 1) {
         PyErr_SetString(PyExc_ValueError, "a maximum of one argument must be passed");
-        return NULL;
+        return -1;
     }
 
-    theacl = PyObject_New(ACLObject, &ACLType);
     if(file != NULL)
-        theacl->ob_acl = acl_get_file(file, ACL_TYPE_ACCESS);
+        self->ob_acl = acl_get_file(file, ACL_TYPE_ACCESS);
     else if(text != NULL)
-        theacl->ob_acl = acl_from_text(text);
+        self->ob_acl = acl_from_text(text);
     else if(fd != -1)
-        theacl->ob_acl = acl_get_fd(fd);
+        self->ob_acl = acl_get_fd(fd);
     else if(thesrc != NULL)
-        theacl->ob_acl = acl_dup(thesrc->ob_acl);
+        self->ob_acl = acl_dup(thesrc->ob_acl);
     else
-        theacl->ob_acl = acl_init(0);
-    if(theacl->ob_acl == NULL) {
-        Py_DECREF(theacl);
-        return PyErr_SetFromErrno(PyExc_IOError);
+        self->ob_acl = acl_init(0);
+    if(self->ob_acl == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
     }
 
-    return (PyObject*)theacl;
+    return 0;
 }
 
 /* Standard type functions */
@@ -107,6 +107,14 @@ static PyObject* ACL_repr(PyObject *obj) {
 }
 
 /* Custom methods */
+static char __applyto_doc__[] = \
+"Apply the ACL to a file or filehandle.\n" \
+"\n" \
+"Parameters:\n" \
+"  - either a filename or a file-like object or an integer; this\n" \
+"    represents the filesystem object on which to act\n" \
+;
+
 /* Applyes the ACL to a file */
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     ACLObject *self = (ACLObject*) obj;
@@ -139,6 +147,22 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     return Py_None;
 }
 
+static char __valid_doc__[] = \
+"Test the ACL for validity.\n" \
+"\n" \
+"This method tests the ACL to see if it is a valid ACL\n" \
+"in terms of the filesystem. More precisely, it checks:\n" \
+"A valid ACL contains exactly one entry with each of the ACL_USER_OBJ,\n" \
+"ACL_GROUP_OBJ, and ACL_OTHER tag types. Entries with ACL_USER and\n" \
+"ACL_GROUP tag types may appear zero or more times in an ACL. An ACL that\n" \
+"contains entries of ACL_USER or ACL_GROUP tag types must contain exactly\n" \
+"one entry of the ACL_MASK tag type. If an ACL contains no entries of\n" \
+"ACL_USER or ACL_GROUP tag types, the ACL_MASK entry is optional.\n" \
+"\n" \
+"All user ID qualifiers must be unique among all entries of ACL_USER tag\n" \
+"type, and all group IDs must be unique among all entries of ACL_GROUP tag\n" \
+"type." \
+;
 /* Checks the ACL for validity */
 static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     ACLObject *self = (ACLObject*) obj;
@@ -205,40 +229,96 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
 
 #endif
 
+static char __acltype_doc__[] = \
+"Type which represents a POSIX ACL\n" \
+"\n" \
+"Depending on the operating system support for POSIX.1e, \n" \
+"this type will have more or less capabilities:\n" \
+"  - level 1, only basic support, you can create\n" \
+"    ACLs from files and text descriptions;\n" \
+"    once created, the type is immutable\n" \
+"  - level 2, complete support, you can alter\n"\
+"    the ACL once it is created\n" \
+"\n" \
+"Parameters:\n" \
+"  Only one keword parameter should be provided:\n"
+"  - file=\"...\", meaning create ACL representing\n"
+"    the ACL of that file\n" \
+"  - fd=<int>, meaning create ACL representing\n" \
+"    the ACL of that file descriptor\n" \
+"  - text=\"...\", meaning create ACL from a \n" \
+"    textual description\n" \
+"  - acl=<ACL instance>, meaning create a copy\n" \
+"    of an existing ACL instance\n" \
+;
+
+/* ACL type methods */
+static PyMethodDef ACL_methods[] = {
+    {"applyto", ACL_applyto, METH_VARARGS, __applyto_doc__},
+    {"valid", ACL_valid, METH_NOARGS, __valid_doc__},
+#ifdef HAVE_LEVEL2
+    {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
+    {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
+#endif
+    {NULL, NULL, 0, NULL}
+};
+
+
 /* The definition of the ACL Type */
 static PyTypeObject ACLType = {
     PyObject_HEAD_INIT(NULL)
     0,
-    "ACL",
+    "posix1e.ACL",
     sizeof(ACLObject),
     0,
-    ACL_dealloc,/*tp_dealloc*/
-    0,          /*tp_print*/
-    0,          /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    ACL_repr,   /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash*/
-    0,          /*tp_call*/
-    0,          /*tp_str*/
-    0,          /*tp_getattro*/
-    0,          /*tp_setattro*/
-    0,          /*tp_as_buffer*/
-    0,          /*tp_flags*/
-    "Type which represents a POSIX ACL", /*tp_doc*/
-    0,          /*tp_traverse*/
-    0,          /*tp_clear*/
-    0,          /*tp_richcompare*/
-    0,          /*tp_weaklistoffset*/
-    0,          /*tp_iter*/
-    0,          /*tp_iternext*/
-    ACL_methods, /*tp_methods*/
+    ACL_dealloc,        /* tp_dealloc */
+    0,                  /* tp_print */
+    0,                  /* tp_getattr */
+    0,                  /* tp_setattr */
+    0,                  /* tp_compare */
+    ACL_repr,           /* tp_repr */
+    0,                  /* tp_as_number */
+    0,                  /* tp_as_sequence */
+    0,                  /* tp_as_mapping */
+    0,                  /* tp_hash */
+    0,                  /* tp_call */
+    0,                  /* tp_str */
+    0,                  /* tp_getattro */
+    0,                  /* tp_setattro */
+    0,                  /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT, /* tp_flags */
+    __acltype_doc__,    /* tp_doc */
+    0,                  /* tp_traverse */
+    0,                  /* tp_clear */
+    0,                  /* tp_richcompare */
+    0,                  /* tp_weaklistoffset */
+    0,                  /* tp_iter */
+    0,                  /* tp_iternext */
+    ACL_methods,        /* tp_methods */
+    0,                  /* tp_members */
+    0,                  /* tp_getset */
+    0,                  /* tp_base */
+    0,                  /* tp_dict */
+    0,                  /* tp_descr_get */
+    0,                  /* tp_descr_set */
+    0,                  /* tp_dictoffset */
+    ACL_init,           /* tp_init */
+    0,                  /* tp_alloc */
+    ACL_new,            /* tp_new */
 };
 
 /* Module methods */
+
+static char __deletedef_doc__[] = \
+"Delete the default ACL from a directory.\n" \
+"\n" \
+"This function deletes the default ACL associated with \n" \
+"a directory (the ACL which will be ANDed with the mode\n" \
+"parameter to the open, creat functions.\n" \
+"Parameters:\n" \
+"  - a string representing the directory whose default ACL\n" \
+"    should be deleted\n" \
+;
 
 /* Deletes the default ACL from a directory */
 static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
@@ -259,16 +339,32 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
 
 /* The module methods */
 static PyMethodDef aclmodule_methods[] = {
-    {"ACL", (PyCFunction)ACL_new, METH_VARARGS|METH_KEYWORDS, "Create a new ACL object."},
-    {"delete_default", aclmodule_delete_default, 
-     METH_VARARGS, "Delete the default ACL from a directory."},
+    {"delete_default", aclmodule_delete_default, METH_VARARGS, __deletedef_doc__},
     {NULL, NULL, 0, NULL}
 };
 
-DL_EXPORT(void) initposixacl(void) {
+static char __posix1e_doc__[] = \
+"POSIX.1e ACLs manipulation\n" \
+"\n" \
+"This module provides support for manipulating POSIX.1e ACLS\n" \
+;
+
+DL_EXPORT(void) initposix1e(void) {
+    PyObject *m, *d;
+
     ACLType.ob_type = &PyType_Type;
 
     if(PyType_Ready(&ACLType) < 0)
         return;
-    Py_InitModule("posixacl", aclmodule_methods);
+
+    m = Py_InitModule3("posix1e", aclmodule_methods, __posix1e_doc__);
+
+    d = PyModule_GetDict(m);
+    if (d == NULL)
+        return;
+
+    Py_INCREF(&ACLType);
+    if (PyDict_SetItemString(d, "ACL",
+                             (PyObject *) &ACLType) < 0)
+        return;
 }

@@ -12,7 +12,7 @@ Linux
 
 FreeBSD
 
-    The current teste version is 4.6. I hope to be able to test 5.0 after
+    The current tested version is 4.6. I hope to be able to test 5.0 after
     it's released.
 
     The level of compliance is level 1. I hope that in FreeBSD 5 they will
@@ -21,4 +21,3 @@ FreeBSD
 
 For any other platform, volunteers are welcome. To add support, look
 into setup.py at first and then into acl.c
-        

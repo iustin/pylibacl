@@ -9,12 +9,30 @@ static PyObject* ACL_valid(PyObject* obj, PyObject* args);
 #ifdef HAVE_LEVEL2
 static PyObject* ACL_get_state(PyObject *obj, PyObject* args);
 static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
+
+staticforward PyTypeObject ACLEntryType;
 #endif
 
 typedef struct {
     PyObject_HEAD
     acl_t ob_acl;
+    int entry_id;
 } ACLObject;
+
+#ifdef HAVE_LEVEL2
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *parent; /* The parent object, so it won't run out on us */
+    acl_entry_t ob_entry;
+} ACLEntryObject;
+
+typedef struct {
+    PyObject_HEAD
+    acl_t ob_acl;
+} PermsetObject;
+
+#endif
 
 /* Creation of a new ACL instance */
 static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
@@ -22,8 +40,10 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
 
     newacl = type->tp_alloc(type, 0);
 
-    if(newacl != NULL)
+    if(newacl != NULL) {
         ((ACLObject*)newacl)->ob_acl = NULL;
+        ((ACLObject*)newacl)->entry_id = ACL_FIRST_ENTRY;
+    }
 
     return newacl;
 }
@@ -169,6 +189,7 @@ static char __valid_doc__[] = \
 "type, and all group IDs must be unique among all entries of ACL_GROUP tag\n" \
 "type." \
 ;
+
 /* Checks the ACL for validity */
 static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     ACLObject *self = (ACLObject*) obj;
@@ -233,6 +254,181 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     return Py_None;
 }
 
+static PyObject* ACL_iter(PyObject *obj) {
+    ACLObject *self = (ACLObject*)obj;
+    self->entry_id = ACL_FIRST_ENTRY;
+    Py_INCREF(obj);
+    return obj;
+}
+
+static PyObject* ACL_iternext(PyObject *obj) {
+    ACLObject *self = (ACLObject*)obj;
+    acl_entry_t the_entry_t;
+    ACLEntryObject *the_entry_obj;
+    int nerr;
+    
+    if((nerr = acl_get_entry(self->ob_acl, self->entry_id, &the_entry_t)) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    self->entry_id = ACL_NEXT_ENTRY;
+    if(nerr == 0) {
+        PyErr_SetObject(PyExc_StopIteration, Py_None);
+        return NULL;
+    }
+
+    the_entry_obj = (ACLEntryObject*) PyType_GenericNew(&ACLEntryType, NULL, NULL);
+    if(the_entry_obj == NULL)
+        return NULL;
+    
+    the_entry_obj->ob_entry = the_entry_t;
+
+    the_entry_obj->parent = obj;
+    Py_INCREF(obj); /* For the reference we have in entry->parent */
+
+    return (PyObject*)the_entry_obj;
+}
+
+/* Creation of a new ACLEntry instance */
+static PyObject* ACLEntry_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+    PyObject* newentry;
+
+    newentry = PyType_GenericNew(type, args, keywds);
+
+    if(newentry != NULL) {
+        ((ACLEntryObject*)newentry)->ob_entry = NULL;
+        ((ACLEntryObject*)newentry)->parent = NULL;
+    }
+
+    return newentry;
+}
+
+/* Initialization of a new ACLEntry instance */
+static int ACLEntry_init(PyObject* obj, PyObject* args, PyObject *keywds) {
+    ACLEntryObject* self = (ACLEntryObject*) obj;
+    ACLObject* parent = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!", &ACLType, &parent))
+        return -1;
+
+    /* Free the old acl_entry_t without checking for error, we don't
+     * care right now */
+    if(self->ob_entry != NULL)
+        acl_free(self->ob_entry);
+
+    if(acl_create_entry(&parent->ob_acl, &self->ob_entry) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+
+    self->parent = (PyObject*)parent;
+    Py_INCREF(parent);
+
+    return 0;
+}
+
+/* Free the ACLEntry instance */
+static void ACLEntry_dealloc(PyObject* obj) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+    PyObject *err_type, *err_value, *err_traceback;
+    int have_error = PyErr_Occurred() ? 1 : 0;
+
+    if (have_error)
+        PyErr_Fetch(&err_type, &err_value, &err_traceback);
+    if(self->parent != NULL) {
+        Py_DECREF(self->parent);
+        self->parent = NULL;
+    }
+    if (have_error)
+        PyErr_Restore(err_type, err_value, err_traceback);
+    PyObject_DEL(self);
+}
+
+static int ACLEntry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+
+    if(value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "tag type deletion is not supported");
+        return -1;
+    }
+
+    if(!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "tag type must be integer");
+        return -1;
+    }
+    if(acl_set_tag_type(self->ob_entry, (acl_tag_t)PyInt_AsLong(value)) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+
+    return 0;
+}
+
+static PyObject* ACLEntry_get_tag_type(PyObject *obj, void* arg) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+    acl_tag_t value;
+
+    if (self->ob_entry == NULL) {
+        PyErr_SetString(PyExc_AttributeError, "entry attribute");
+        return NULL;
+    }
+    if(acl_get_tag_type(self->ob_entry, &value) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
+    return PyInt_FromLong(value);
+}
+
+static int ACLEntry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+    int uidgid;
+
+    if(value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "qualifier deletion is not supported");
+        return -1;
+    }
+
+    if(!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "tag type must be integer");
+        return -1;
+    }
+    uidgid = PyInt_AsLong(value);
+    if(acl_set_qualifier(self->ob_entry, (void*)&uidgid) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+
+    return 0;
+}
+
+static PyObject* ACLEntry_get_qualifier(PyObject *obj, void* arg) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+    void *p;
+    int value;
+
+    if (self->ob_entry == NULL) {
+        PyErr_SetString(PyExc_AttributeError, "entry attribute");
+        return NULL;
+    }
+    if((p = acl_get_qualifier(self->ob_entry)) == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+    value = *(uid_t*)p;
+    
+    return PyInt_FromLong(value);
+}
+
+static PyObject* ACLEntry_get_parent(PyObject *obj, void* arg) {
+    ACLEntryObject *self = (ACLEntryObject*) obj;
+    
+    Py_INCREF(self->parent);
+    return self->parent;
+}
+
 #endif
 
 static char __acltype_doc__[] = \
@@ -290,8 +486,13 @@ static PyTypeObject ACLType = {
     0,                  /* tp_clear */
     0,                  /* tp_richcompare */
     0,                  /* tp_weaklistoffset */
+#ifdef HAVE_LEVEL2
+    ACL_iter,
+    ACL_iternext,
+#else
     0,                  /* tp_iter */
     0,                  /* tp_iternext */
+#endif
     ACL_methods,        /* tp_methods */
     0,                  /* tp_members */
     0,                  /* tp_getset */
@@ -304,6 +505,91 @@ static PyTypeObject ACLType = {
     0,                  /* tp_alloc */
     ACL_new,            /* tp_new */
 };
+
+#ifdef HAVE_LEVEL2
+
+/* ACLEntry type methods */
+static PyMethodDef ACLEntry_methods[] = {
+    {NULL, NULL, 0, NULL}
+};
+
+static char __ACLEntry_tagtype_doc__[] = \
+"The tag type of the current entry\n" \
+"\n" \
+"This is one of:\n" \
+" - ACL_UNDEFINED_TAG\n" \
+" - ACL_USER_OBJ\n" \
+" - ACL_USER\n" \
+" - ACL_GROUP_OBJ\n" \
+" - ACL_GROUP\n" \
+" - ACL_MASK\n" \
+" - ACL_OTHER\n" \
+;
+
+static char __ACLEntry_qualifier_doc__[] = \
+"The qualifier of the current entry\n" \
+"\n" \
+"If the tag type is ACL_USER, this should be a user id.\n" \
+"If the tag type if ACL_GROUP, this should be a group id.\n" \
+"Else, it doesn't matter.\n" \
+;
+
+static char __ACLEntry_parent_doc__[] = \
+"The parent ACL of this entry\n" \
+;
+
+/* ACLEntry getset */
+static PyGetSetDef ACLEntry_getsets[] = {
+    {"tag_type", ACLEntry_get_tag_type, ACLEntry_set_tag_type, __ACLEntry_tagtype_doc__},
+    {"qualifier", ACLEntry_get_qualifier, ACLEntry_set_qualifier, __ACLEntry_qualifier_doc__},
+    {"parent", ACLEntry_get_parent, NULL, __ACLEntry_parent_doc__},
+    {NULL}
+};
+
+/* The definition of the ACL Entry Type */
+static PyTypeObject ACLEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "posix1e.ACLEntry",
+    sizeof(ACLEntryObject),
+    0,
+    ACLEntry_dealloc,   /* tp_dealloc */
+    0,                  /* tp_print */
+    0,                  /* tp_getattr */
+    0,                  /* tp_setattr */
+    0,                  /* tp_compare */
+    0, //ACLEntry_repr,      /* tp_repr */
+    0,                  /* tp_as_number */
+    0,                  /* tp_as_sequence */
+    0,                  /* tp_as_mapping */
+    0,                  /* tp_hash */
+    0,                  /* tp_call */
+    0,                  /* tp_str */
+    0,                  /* tp_getattro */
+    0,                  /* tp_setattro */
+    0,                  /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT, /* tp_flags */
+    __acltype_doc__,    /* tp_doc */
+    0,                  /* tp_traverse */
+    0,                  /* tp_clear */
+    0,                  /* tp_richcompare */
+    0,                  /* tp_weaklistoffset */
+    0,                  /* tp_iter */
+    0,                  /* tp_iternext */
+    ACLEntry_methods,   /* tp_methods */
+    0,                  /* tp_members */
+    ACLEntry_getsets,   /* tp_getset */
+    0,                  /* tp_base */
+    0,                  /* tp_dict */
+    0,                  /* tp_descr_get */
+    0,                  /* tp_descr_set */
+    0,                  /* tp_dictoffset */
+    ACLEntry_init,      /* tp_init */
+    0,                  /* tp_alloc */
+    ACLEntry_new,       /* tp_new */
+};
+
+#endif
 
 /* Module methods */
 
@@ -388,6 +674,13 @@ DL_EXPORT(void) initposix1e(void) {
     if(PyType_Ready(&ACLType) < 0)
         return;
 
+#ifdef HAVE_LEVEL2
+    ACLEntryType.ob_type = &PyType_Type;
+
+    if(PyType_Ready(&ACLEntryType) < 0)
+        return;
+#endif
+
     m = Py_InitModule3("posix1e", aclmodule_methods, __posix1e_doc__);
 
     d = PyModule_GetDict(m);
@@ -398,4 +691,29 @@ DL_EXPORT(void) initposix1e(void) {
     if (PyDict_SetItemString(d, "ACL",
                              (PyObject *) &ACLType) < 0)
         return;
+#ifdef HAVE_LEVEL2
+    Py_INCREF(&ACLEntryType);
+    if (PyDict_SetItemString(d, "ACLEntry",
+                             (PyObject *) &ACLEntryType) < 0)
+        return;
+
+    /* 23.2.2 acl_perm_t values */
+    PyModule_AddIntConstant(m, "ACL_READ", ACL_READ);
+    PyModule_AddIntConstant(m, "ACL_WRITE", ACL_WRITE);
+    PyModule_AddIntConstant(m, "ACL_EXECUTE", ACL_EXECUTE);
+
+    /* 23.2.5 acl_tag_t values */
+    PyModule_AddIntConstant(m, "ACL_UNDEFINED_TAG", ACL_UNDEFINED_TAG);
+    PyModule_AddIntConstant(m, "ACL_USER_OBJ", ACL_USER_OBJ);
+    PyModule_AddIntConstant(m, "ACL_USER", ACL_USER);
+    PyModule_AddIntConstant(m, "ACL_GROUP_OBJ", ACL_GROUP_OBJ);
+    PyModule_AddIntConstant(m, "ACL_GROUP", ACL_GROUP);
+    PyModule_AddIntConstant(m, "ACL_MASK", ACL_MASK);
+    PyModule_AddIntConstant(m, "ACL_OTHER", ACL_OTHER);
+
+    /* 23.3.6 acl_type_t values */    
+    PyModule_AddIntConstant(m, "ACL_TYPE_ACCESS", ACL_TYPE_ACCESS);
+    PyModule_AddIntConstant(m, "ACL_TYPE_DEFAULT", ACL_TYPE_DEFAULT);
+
+#endif
 }

@@ -30,7 +30,7 @@ Internal structure
     The POSIX draft has the following stuff (correct me if I'm wrong):
         - an ACL is denoted by acl_t
         - an ACL contains many acl_entry_t, these are the individual entries
-          in the list
+          in the list; they always! belong to an acl_t
         - each entry_t has a qualifier (think uid_t or gid_t), whose type is 
           denoted by the acl_tag_t type, and an acl_permset_t
         - the acl_permset_t can contain acl_perm_t value (ACL_READ, ACL_WRITE,

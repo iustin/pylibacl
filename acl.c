@@ -15,7 +15,7 @@ staticforward PyTypeObject ACLEntryType;
 
 typedef struct {
     PyObject_HEAD
-    acl_t ob_acl;
+    acl_t acl;
     int entry_id;
 } ACLObject;
 
@@ -24,12 +24,12 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     PyObject *parent; /* The parent object, so it won't run out on us */
-    acl_entry_t ob_entry;
+    acl_entry_t entry;
 } ACLEntryObject;
 
 typedef struct {
     PyObject_HEAD
-    acl_t ob_acl;
+    acl_permset_t permset;
 } PermsetObject;
 
 #endif
@@ -41,7 +41,7 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
     newacl = type->tp_alloc(type, 0);
 
     if(newacl != NULL) {
-        ((ACLObject*)newacl)->ob_acl = NULL;
+        ((ACLObject*)newacl)->acl = NULL;
         ((ACLObject*)newacl)->entry_id = ACL_FIRST_ENTRY;
     }
 
@@ -77,21 +77,21 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 
     /* Free the old acl_t without checking for error, we don't
      * care right now */
-    if(self->ob_acl != NULL)
-        acl_free(self->ob_acl);
+    if(self->acl != NULL)
+        acl_free(self->acl);
 
     if(file != NULL)
-        self->ob_acl = acl_get_file(file, ACL_TYPE_ACCESS);
+        self->acl = acl_get_file(file, ACL_TYPE_ACCESS);
     else if(text != NULL)
-        self->ob_acl = acl_from_text(text);
+        self->acl = acl_from_text(text);
     else if(fd != -1)
-        self->ob_acl = acl_get_fd(fd);
+        self->acl = acl_get_fd(fd);
     else if(thesrc != NULL)
-        self->ob_acl = acl_dup(thesrc->ob_acl);
+        self->acl = acl_dup(thesrc->acl);
     else
-        self->ob_acl = acl_init(0);
+        self->acl = acl_init(0);
 
-    if(self->ob_acl == NULL) {
+    if(self->acl == NULL) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -107,7 +107,7 @@ static void ACL_dealloc(PyObject* obj) {
 
     if (have_error)
         PyErr_Fetch(&err_type, &err_value, &err_traceback);
-    if(acl_free(self->ob_acl) != 0)
+    if(acl_free(self->acl) != 0)
         PyErr_WriteUnraisable(obj);
     if (have_error)
         PyErr_Restore(err_type, err_value, err_traceback);
@@ -120,7 +120,7 @@ static PyObject* ACL_repr(PyObject *obj) {
     ACLObject *self = (ACLObject*) obj;
     PyObject *ret;
 
-    text = acl_to_text(self->ob_acl, NULL);
+    text = acl_to_text(self->acl, NULL);
     if(text == NULL) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -157,9 +157,9 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
 
     if(PyString_Check(myarg)) {
         char *filename = PyString_AS_STRING(myarg);
-        nret = acl_set_file(filename, type, self->ob_acl);
+        nret = acl_set_file(filename, type, self->acl);
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
-        nret = acl_set_fd(fd, self->ob_acl);
+        nret = acl_set_fd(fd, self->acl);
     } else {
         PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int, or file-like object");
         return 0;
@@ -194,7 +194,7 @@ static char __valid_doc__[] = \
 static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     ACLObject *self = (ACLObject*) obj;
 
-    if(acl_valid(self->ob_acl) == -1) {
+    if(acl_valid(self->acl) == -1) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
 
@@ -211,7 +211,7 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
     ssize_t size, nsize;
     char *buf;
 
-    size = acl_size(self->ob_acl);
+    size = acl_size(self->acl);
     if(size == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
@@ -219,7 +219,7 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
         return NULL;
     buf = PyString_AsString(ret);
     
-    if((nsize = acl_copy_ext(buf, self->ob_acl, size)) == -1) {
+    if((nsize = acl_copy_ext(buf, self->acl, size)) == -1) {
         Py_DECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -242,12 +242,12 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
         return PyErr_SetFromErrno(PyExc_IOError);
         
     /* Free the old acl. Should we ignore errors here? */
-    if(self->ob_acl != NULL) {
-        if(acl_free(self->ob_acl) == -1)
+    if(self->acl != NULL) {
+        if(acl_free(self->acl) == -1)
             return PyErr_SetFromErrno(PyExc_IOError);
     }
 
-    self->ob_acl = ptr;
+    self->acl = ptr;
 
     /* Return the result */
     Py_INCREF(Py_None);
@@ -267,7 +267,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     ACLEntryObject *the_entry_obj;
     int nerr;
     
-    if((nerr = acl_get_entry(self->ob_acl, self->entry_id, &the_entry_t)) == -1)
+    if((nerr = acl_get_entry(self->acl, self->entry_id, &the_entry_t)) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
     self->entry_id = ACL_NEXT_ENTRY;
     if(nerr == 0) {
@@ -279,7 +279,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     if(the_entry_obj == NULL)
         return NULL;
     
-    the_entry_obj->ob_entry = the_entry_t;
+    the_entry_obj->entry = the_entry_t;
 
     the_entry_obj->parent = obj;
     Py_INCREF(obj); /* For the reference we have in entry->parent */
@@ -294,7 +294,7 @@ static PyObject* ACLEntry_new(PyTypeObject* type, PyObject* args, PyObject *keyw
     newentry = PyType_GenericNew(type, args, keywds);
 
     if(newentry != NULL) {
-        ((ACLEntryObject*)newentry)->ob_entry = NULL;
+        ((ACLEntryObject*)newentry)->entry = NULL;
         ((ACLEntryObject*)newentry)->parent = NULL;
     }
 
@@ -309,12 +309,7 @@ static int ACLEntry_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     if (!PyArg_ParseTuple(args, "O!", &ACLType, &parent))
         return -1;
 
-    /* Free the old acl_entry_t without checking for error, we don't
-     * care right now */
-    if(self->ob_entry != NULL)
-        acl_free(self->ob_entry);
-
-    if(acl_create_entry(&parent->ob_acl, &self->ob_entry) == -1) {
+    if(acl_create_entry(&parent->acl, &self->entry) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -356,7 +351,7 @@ static int ACLEntry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
                         "tag type must be integer");
         return -1;
     }
-    if(acl_set_tag_type(self->ob_entry, (acl_tag_t)PyInt_AsLong(value)) == -1) {
+    if(acl_set_tag_type(self->entry, (acl_tag_t)PyInt_AsLong(value)) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -368,11 +363,11 @@ static PyObject* ACLEntry_get_tag_type(PyObject *obj, void* arg) {
     ACLEntryObject *self = (ACLEntryObject*) obj;
     acl_tag_t value;
 
-    if (self->ob_entry == NULL) {
+    if (self->entry == NULL) {
         PyErr_SetString(PyExc_AttributeError, "entry attribute");
         return NULL;
     }
-    if(acl_get_tag_type(self->ob_entry, &value) == -1) {
+    if(acl_get_tag_type(self->entry, &value) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
     }
@@ -396,7 +391,7 @@ static int ACLEntry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
         return -1;
     }
     uidgid = PyInt_AsLong(value);
-    if(acl_set_qualifier(self->ob_entry, (void*)&uidgid) == -1) {
+    if(acl_set_qualifier(self->entry, (void*)&uidgid) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -409,11 +404,11 @@ static PyObject* ACLEntry_get_qualifier(PyObject *obj, void* arg) {
     void *p;
     int value;
 
-    if (self->ob_entry == NULL) {
+    if (self->entry == NULL) {
         PyErr_SetString(PyExc_AttributeError, "entry attribute");
         return NULL;
     }
-    if((p = acl_get_qualifier(self->ob_entry)) == NULL) {
+    if((p = acl_get_qualifier(self->entry)) == NULL) {
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
     }

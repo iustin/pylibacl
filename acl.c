@@ -312,7 +312,7 @@ static char __deletedef_doc__[] = \
 "\n" \
 "This function deletes the default ACL associated with \n" \
 "a directory (the ACL which will be ANDed with the mode\n" \
-"parameter to the open, creat functions.\n" \
+"parameter to the open, creat functions).\n" \
 "Parameters:\n" \
 "  - a string representing the directory whose default ACL\n" \
 "    should be deleted\n" \

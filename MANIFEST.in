@@ -8,3 +8,4 @@ include MANIFEST
 include posix1e.html
 include posix1e.txt
 include setup.cfg
+include ChangeLog

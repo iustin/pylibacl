@@ -300,7 +300,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     return (PyObject*)the_entry_obj;
 }
 
-static char __ACL_delentry_doc__[] = \
+static char __ACL_delete_entry_doc__[] = \
 "Deletes an entry from the ACL.\n" \
 "\n" \
 "Note: Only with level 2\n" \
@@ -311,7 +311,7 @@ static char __ACL_delentry_doc__[] = \
 ;
 
 /* Deletes an entry from the ACL */
-static PyObject* ACL_delentry(PyObject *obj, PyObject *args) {
+static PyObject* ACL_delete_entry(PyObject *obj, PyObject *args) {
     ACL_Object *self = (ACL_Object*)obj;
     Entry_Object *e;
 
@@ -325,6 +325,80 @@ static PyObject* ACL_delentry(PyObject *obj, PyObject *args) {
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+static char __ACL_calc_mask_doc__[] = \
+"Compute the file group class mask.\n" \
+"\n" \
+"The calc_mask() method calculates and sets the permissions \n" \
+"associated with the ACL_MASK Entry of the ACL.\n" \
+"The value of the new permissions is the union of the permissions \n" \
+"granted by all entries of tag type ACL_GROUP, ACL_GROUP_OBJ, or \n" \
+"ACL_USER.  If the ACL already contains an ACL_MASK entry, its \n" \
+"permissions are overwritten; if it does not contain an ACL_MASK \n" \
+"Entry, one is added.\n" \
+"\n" \
+"The order of existing entries in the ACL is undefined after this \n" \
+"function.\n" \
+;
+
+/* Updates the mask entry in the ACL */
+static PyObject* ACL_calc_mask(PyObject *obj, PyObject *args) {
+    ACL_Object *self = (ACL_Object*)obj;
+    
+    if(acl_calc_mask(&self->acl) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static char __ACL_append_doc__[] = \
+"Append a new Entry to the ACL and return it.\n" \
+"\n" \
+"This is a convenience function to create a new Entry \n" \
+"and append it to the ACL.\n" \
+"If a parameter of type Entry instance is given, the \n" \
+"entry will be a copy of that one (as if copied with \n" \
+"Entry.copy()), otherwise, the new entry will be empty.\n" \
+;
+
+/* Convenience method to create a new Entry */
+static PyObject* ACL_append(PyObject *obj, PyObject *args) {
+    ACL_Object* self = (ACL_Object*) obj;
+    Entry_Object* newentry;
+    Entry_Object* oldentry = NULL;
+    int nret;
+
+    newentry = (Entry_Object*)PyType_GenericNew(&Entry_Type, NULL, NULL);
+    if(newentry == NULL) {
+        return NULL;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O!", &Entry_Type, &oldentry))
+        return NULL;
+
+    nret = acl_create_entry(&self->acl, &newentry->entry);
+    if(nret == -1) {
+        Py_DECREF(newentry);
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+
+    if(oldentry != NULL) {
+        nret = acl_copy_entry(newentry->entry, oldentry->entry);
+        if(nret == -1) {
+            Py_DECREF(newentry);
+            return PyErr_SetFromErrno(PyExc_IOError);
+        }
+    }
+
+    newentry->parent_acl = obj;
+    Py_INCREF(obj);
+    
+    return (PyObject*)newentry;
+}
+
+/***** Entry type *****/
 
 /* Creation of a new Entry instance */
 static PyObject* Entry_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
@@ -698,6 +772,97 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     return 0;
 }
 
+static char __Permset_add_doc__[] = \
+"Add a permission to the permission set.\n" \
+"\n" \
+"The add() function adds the permission contained in \n" \
+"the argument perm to the permission set.  An attempt \n" \
+"to add a permission that is already contained in the \n" \
+"permission set is not considered an error.\n" \
+"Parameters:\n" \
+"  - perm a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...\n" \
+"Return value:\n" \
+"  None\n" \
+"Can raise: IOError\n" \
+;
+
+static PyObject* Permset_add(PyObject* obj, PyObject* args) {
+    Permset_Object *self = (Permset_Object*) obj;
+    int right;
+
+    if (!PyArg_ParseTuple(args, "i", &right))
+        return NULL;
+
+    if(acl_add_perm(self->permset, (acl_perm_t) right) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static char __Permset_delete_doc__[] = \
+"Delete a permission from the permission set.\n" \
+"\n" \
+"The delete() function deletes the permission contained in \n" \
+"the argument perm from the permission set.  An attempt \n" \
+"to delete a permission that is not contained in the \n" \
+"permission set is not considered an error.\n" \
+"Parameters:\n" \
+"  - perm a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...\n" \
+"Return value:\n" \
+"  None\n" \
+"Can raise: IOError\n" \
+;
+
+static PyObject* Permset_delete(PyObject* obj, PyObject* args) {
+    Permset_Object *self = (Permset_Object*) obj;
+    int right;
+
+    if (!PyArg_ParseTuple(args, "i", &right))
+        return NULL;
+
+    if(acl_delete_perm(self->permset, (acl_perm_t) right) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static char __Permset_test_doc__[] = \
+"Test if a permission exists in the permission set.\n" \
+"\n" \
+"The test() function tests if the permission contained in \n" \
+"the argument perm exits the permission set.\n" \
+"Parameters:\n" \
+"  - perm a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...\n" \
+"Return value:\n" \
+"  Bool\n" \
+"Can raise: IOError\n" \
+;
+
+static PyObject* Permset_test(PyObject* obj, PyObject* args) {
+    Permset_Object *self = (Permset_Object*) obj;
+    int right;
+    int ret;
+
+    if (!PyArg_ParseTuple(args, "i", &right))
+        return NULL;
+
+    ret = get_perm(self->permset, (acl_perm_t) right);
+    if(ret == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    if(ret) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    } else {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+}
+
 #endif
 
 static char __ACL_Type_doc__[] = \
@@ -727,7 +892,9 @@ static PyMethodDef ACL_methods[] = {
 #ifdef HAVE_LEVEL2
     {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
     {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
-    {"delentry", ACL_delentry, METH_VARARGS, __ACL_delentry_doc__},
+    {"delete_entry", ACL_delete_entry, METH_VARARGS, __ACL_delete_entry_doc__},
+    {"calc_mask", ACL_calc_mask, METH_NOARGS, __ACL_calc_mask_doc__},
+    {"append", ACL_append, METH_VARARGS, __ACL_append_doc__},
 #endif
     {NULL, NULL, 0, NULL}
 };
@@ -836,6 +1003,10 @@ static char __Entry_Type_doc__[] = \
 "or by:\n" \
 "  for entry in myACL:\n" \
 "      print entry\n" \
+"\n" \
+"Note that the Entry keeps a reference to its ACL, so even if \n" \
+"you delete the ACL, it won't be cleaned up and will continue to \n" \
+"exist until its Entry(ies) will be deleted.\n" \
 ;
 /* The definition of the Entry Type */
 static PyTypeObject Entry_Type = {
@@ -883,19 +1054,37 @@ static PyTypeObject Entry_Type = {
 /* Permset type methods */
 static PyMethodDef Permset_methods[] = {
     {"clear", Permset_clear, METH_NOARGS, __Permset_clear_doc__, },
+    {"add", Permset_add, METH_VARARGS, __Permset_add_doc__, },
+    {"delete", Permset_delete, METH_VARARGS, __Permset_delete_doc__, },
+    {"test", Permset_test, METH_VARARGS, __Permset_test_doc__, },
     {NULL, NULL, 0, NULL}
 };
 
 static char __Permset_execute_doc__[] = \
 "Execute permsission\n" \
+"\n" \
+"This is a convenience method of access; the \n" \
+"same effect can be achieved using the functions\n" \
+"add(), test(), delete(), and those can take any \n" \
+"permission defined by your platform.\n" \
 ;
 
 static char __Permset_read_doc__[] = \
 "Read permsission\n" \
+"\n" \
+"This is a convenience method of access; the \n" \
+"same effect can be achieved using the functions\n" \
+"add(), test(), delete(), and those can take any \n" \
+"permission defined by your platform.\n" \
 ;
 
 static char __Permset_write_doc__[] = \
 "Write permsission\n" \
+"\n" \
+"This is a convenience method of access; the \n" \
+"same effect can be achieved using the functions\n" \
+"add(), test(), delete(), and those can take any \n" \
+"permission defined by your platform.\n" \
 ;
 
 /* Permset getset */
@@ -914,6 +1103,10 @@ static char __Permset_Type_doc__[] = \
 "  perms = myEntry.permset\n" \
 "or by:\n" \
 "  perms = posix1e.Permset(myEntry)\n" \
+"\n" \
+"Note that the Permset keeps a reference to its Entry, so even if \n" \
+"you delete the entry, it won't be cleaned up and will continue to \n" \
+"exist until its Permset will be deleted.\n" \
 ;
 
 /* The definition of the Permset Type */

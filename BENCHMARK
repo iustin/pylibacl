@@ -1,0 +1,20 @@
+On my Duron 1000, Linux 2.4, creating 1.000.000 ACLs and discarding them:
+
+empty ACL: 4.48user 0.03system 0:04.50elapsed 100%CPU
+from text: 13.87user 0.09system 0:13.97elapsed 99%CPU
+XFS, from file: 14.17user 14.95system 0:29.13elapsed 99%CPU
+
+creating a list from the entries of an ACL:
+no entries: 3.86user 0.01system 0:03.86elapsed 100%CPU
+6 entries: 16.39user 0.00system 0:16.38elapsed 100%CPU
+
+As you can see, creating from file is the longest (as expected). More than
+half time when creating from file was in kernel mode.
+
+
+In freebsd 4.6, UNDER VMWARE!!!!, same machine:
+empty ACL: 3.368u 0.492s 0:03.85 100.0%    514+15436k 0+0io 0pf+0w
+from text: 10.638u 1.137s 0:11.88 98.9%    516+24543k 0+0io 1pf+0w
+
+Interesting results, it seems from text is faster here - but here
+the library doens't support editing, so maybe that's why.

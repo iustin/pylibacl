@@ -1,0 +1,7 @@
+This is an extesion for Python which implements POSIX ACLs (POSIX.1e).
+
+Right now, the module is known to build on Linux (the acl library must
+be installed) and on FreeBSD. To add support, send a patch or contact
+the author.
+
+Iustin Pop, <iusty@k1024.org>

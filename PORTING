@@ -1,0 +1,18 @@
+First, determine if your OS supports the full 28 functions of the
+POSIX.1e draft (if so, LEVEL2) or only the first 11 functions (most
+common case, meaning LEVEL1).
+
+If your OS supports only LEVEL1, modift setup.py as appropriately;
+unfortunately, the functionality of the module is quite low.
+
+If your OS supports LEVEL2, there is a function which you must define:
+testing if an acl_permset_t contains a given permission. For example,
+under Linux, the acl library defines:
+    int acl_get_perm(acl_permset_t permset_d, acl_perm_t perm);
+under FreeBSD, the acl_permset_t is actually a mode_t and you can test
+with |. So just see how this is implemented in your platform and
+define a function:
+    static int get_perm(acl_permset_t permset_d, acl_perm_t perm);
+which return 1 if the permset contains perm and 0 otherwise. Put that
+function in a separate file, os_<your os>.c and modify the top of
+acl.c to include that file (see there for example).

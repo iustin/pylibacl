@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 import distutils, os
 from distutils.core import setup, Extension

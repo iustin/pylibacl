@@ -1,0 +1,24 @@
+The current supported platforms:
+
+Linux 
+
+    It needs kernel 2.4 or higher and the libacl library installed (with
+    development headers, if installing from rpm). The url is
+    http://acl.bestbits.at if using for ext2/ext3 and JFS, and
+    http://oss.sgi.com/projects/xfs/ if using for XFS.
+
+    The level of compliance is level 2 (see IMPLEMENTATION).
+
+
+FreeBSD
+
+    The current teste version is 4.6. I hope to be able to test 5.0 after
+    it's released.
+
+    The level of compliance is level 1. I hope that in FreeBSD 5 they will
+    improve.
+
+
+For any other platform, volunteers are welcome. To add support, look
+into setup.py at first and then into acl.c
+        

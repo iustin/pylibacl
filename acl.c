@@ -8,6 +8,7 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args);
 static PyObject* ACL_valid(PyObject* obj, PyObject* args);
 #ifdef HAVE_LEVEL2
 static PyObject* ACL_get_state(PyObject *obj, PyObject* args);
+static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
 #endif
 
 typedef struct {
@@ -21,6 +22,7 @@ static PyMethodDef ACL_methods[] = {
     {"valid", ACL_valid, METH_NOARGS, "Test the ACL for validity."},
 #ifdef HAVE_LEVEL2
     {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
+    {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
 #endif
     {NULL, NULL, 0, NULL}
 };
@@ -174,6 +176,33 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
     return ret;
 }
 
+static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
+    ACLObject *self = (ACLObject*) obj;
+    const void *buf;
+    int bufsize;
+    acl_t ptr;
+
+    /* Parse the argument */
+    if (!PyArg_ParseTuple(args, "s#", &buf, &bufsize))
+        return NULL;
+
+    /* Try to import the external representation */
+    if((ptr = acl_copy_int(buf)) == NULL)
+        return PyErr_SetFromErrno(PyExc_IOError);
+        
+    /* Free the old acl. Should we ignore errors here? */
+    if(self->ob_acl != NULL) {
+        if(acl_free(self->ob_acl) == -1)
+            return PyErr_SetFromErrno(PyExc_IOError);
+    }
+
+    self->ob_acl = ptr;
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 #endif
 
 /* The definition of the ACL Type */
@@ -236,10 +265,10 @@ static PyMethodDef aclmodule_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-DL_EXPORT(void) initacl(void) {
+DL_EXPORT(void) initposixacl(void) {
     ACLType.ob_type = &PyType_Type;
 
     if(PyType_Ready(&ACLType) < 0)
         return;
-    Py_InitModule("acl", aclmodule_methods);
+    Py_InitModule("posixacl", aclmodule_methods);
 }

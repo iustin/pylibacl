@@ -17,16 +17,20 @@ elif u_sysname == "FreeBSD":
 else:
     raise ValueError("I don't know your system. Please contact the author")
 
-setup(name="pyacl",
-      version="0.1",
-      description="POSIX ACLs for python",
+version = "0.1"
+setup(name="pylibacl",
+      version=version,
+      description="POSIX.1e ACLs for python",
       long_description="""This is a C extension module for Python which
       implements POSIX ACLs manipulation. It is a wrapper on top
-      of the acl C library - see acl(5).""",
+      of the systems's acl C library - see acl(5).""",
       author="Iustin Pop",
       author_email="iusty@k1024.org",
-      ext_modules=[Extension("acl", ["acl.c"],
+      url="http://pylibacl.sourceforge.net",
+      license="GPL",
+      ext_modules=[Extension("posixacl", ["acl.c"],
                              libraries=libs,
                              define_macros=macros,
                              )],
+      data_files=[("/usr/share/doc/pylibacl-%s" % version, ["README",])],
       )

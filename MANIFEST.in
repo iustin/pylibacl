@@ -1,6 +1,7 @@
 include README
 include PLATFORMS
 include IMPLEMENTATION
+include BENCHMARK
 include acl.c
 include os_*.c
 include MANIFEST

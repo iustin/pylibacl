@@ -23,7 +23,9 @@ static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywd
 typedef struct {
     PyObject_HEAD
     acl_t acl;
+#ifdef HAVE_LEVEL2
     int entry_id;
+#endif
 } ACL_Object;
 
 #ifdef HAVE_LEVEL2
@@ -50,7 +52,9 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
 
     if(newacl != NULL) {
         ((ACL_Object*)newacl)->acl = NULL;
+#ifdef HAVEL_LEVEL2
         ((ACL_Object*)newacl)->entry_id = ACL_FIRST_ENTRY;
+#endif
     }
 
     return newacl;

@@ -24,15 +24,15 @@ typedef struct {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *parent; /* The parent acl, so it won't run out on us */
+    PyObject *parent_acl; /* The parent acl, so it won't run out on us */
     acl_entry_t entry;
 } Entry_Object;
 
 typedef struct {
     PyObject_HEAD
-    PyObject *parent; /* The parent entry, so it won't run out on us */
+    PyObject *parent_entry; /* The parent entry, so it won't run out on us */
     acl_permset_t permset;
-} PermsetObject;
+} Permset_Object;
 
 #endif
 
@@ -117,7 +117,7 @@ static void ACL_dealloc(PyObject* obj) {
 }
 
 /* Converts the acl to a text format */
-static PyObject* ACL_repr(PyObject *obj) {
+static PyObject* ACL_str(PyObject *obj) {
     char *text;
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *ret;
@@ -273,7 +273,8 @@ static PyObject* ACL_iternext(PyObject *obj) {
         return PyErr_SetFromErrno(PyExc_IOError);
     self->entry_id = ACL_NEXT_ENTRY;
     if(nerr == 0) {
-        PyErr_SetObject(PyExc_StopIteration, Py_None);
+        /* Docs says this is not needed */
+        /*PyErr_SetObject(PyExc_StopIteration, Py_None);*/
         return NULL;
     }
 
@@ -283,7 +284,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     
     the_entry_obj->entry = the_entry_t;
 
-    the_entry_obj->parent = obj;
+    the_entry_obj->parent_acl = obj;
     Py_INCREF(obj); /* For the reference we have in entry->parent */
 
     return (PyObject*)the_entry_obj;
@@ -297,7 +298,7 @@ static PyObject* Entry_new(PyTypeObject* type, PyObject* args, PyObject *keywds)
 
     if(newentry != NULL) {
         ((Entry_Object*)newentry)->entry = NULL;
-        ((Entry_Object*)newentry)->parent = NULL;
+        ((Entry_Object*)newentry)->parent_acl = NULL;
     }
 
     return newentry;
@@ -316,7 +317,7 @@ static int Entry_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         return -1;
     }
 
-    self->parent = (PyObject*)parent;
+    self->parent_acl = (PyObject*)parent;
     Py_INCREF(parent);
 
     return 0;
@@ -330,13 +331,64 @@ static void Entry_dealloc(PyObject* obj) {
 
     if (have_error)
         PyErr_Fetch(&err_type, &err_value, &err_traceback);
-    if(self->parent != NULL) {
-        Py_DECREF(self->parent);
-        self->parent = NULL;
+    if(self->parent_acl != NULL) {
+        Py_DECREF(self->parent_acl);
+        self->parent_acl = NULL;
     }
     if (have_error)
         PyErr_Restore(err_type, err_value, err_traceback);
     PyObject_DEL(self);
+}
+
+/* Converts the entry to a text format */
+static PyObject* Entry_str(PyObject *obj) {
+    acl_tag_t tag;
+    uid_t qualifier;
+    void *p;
+    PyObject *ret;
+    PyObject *format, *list;
+    Entry_Object *self = (Entry_Object*) obj;
+
+    if(acl_get_tag_type(self->entry, &tag) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+    if(tag == ACL_USER || tag == ACL_GROUP) {
+        if((p = acl_get_qualifier(self->entry)) == NULL) {
+            PyErr_SetFromErrno(PyExc_IOError);
+            return NULL;
+        }
+        qualifier = *(uid_t*)p;
+        acl_free(p);
+    } else {
+        qualifier = 0;
+    }
+    
+    format = PyString_FromString("ACL entry for %s, rights: <unknown>");
+    if(format == NULL)
+        return NULL;
+    list = PyTuple_New(1);
+    if(tag == ACL_UNDEFINED_TAG) {
+        PyTuple_SetItem(list, 0, PyString_FromString("undefined type"));
+    } else if(tag == ACL_USER_OBJ) {
+        PyTuple_SetItem(list, 0, PyString_FromString("the owner"));
+    } else if(tag == ACL_GROUP_OBJ) {
+        PyTuple_SetItem(list, 0, PyString_FromString("the group"));
+    } else if(tag == ACL_OTHER) {
+        PyTuple_SetItem(list, 0, PyString_FromString("the others"));
+    } else if(tag == ACL_USER) {
+        PyTuple_SetItem(list, 0, PyString_FromFormat("user %u", qualifier));
+    } else if(tag == ACL_GROUP) {
+        PyTuple_SetItem(list, 0, PyString_FromFormat("group %u", qualifier));
+    } else if(tag == ACL_MASK) {
+        PyTuple_SetItem(list, 0, PyString_FromString("the mask"));
+    } else {
+        PyTuple_SetItem(list, 0, PyString_FromString("UNKNOWN_TAG_TYPE!"));
+    }
+    ret = PyString_Format(format, list);
+    Py_DECREF(format);
+    Py_DECREF(list);
+    return ret;
 }
 
 static int Entry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
@@ -415,6 +467,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
         return NULL;
     }
     value = *(uid_t*)p;
+    acl_free(p);
     
     return PyInt_FromLong(value);
 }
@@ -422,8 +475,69 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
 static PyObject* Entry_get_parent(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     
-    Py_INCREF(self->parent);
-    return self->parent;
+    Py_INCREF(self->parent_acl);
+    return self->parent_acl;
+}
+
+/* Creation of a new Permset instance */
+static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+    PyObject* newpermset;
+
+    newpermset = PyType_GenericNew(type, args, keywds);
+
+    if(newpermset != NULL) {
+        ((Permset_Object*)newpermset)->permset = NULL;
+        ((Permset_Object*)newpermset)->parent_entry = NULL;
+    }
+
+    return newpermset;
+}
+
+/* Initialization of a new Permset instance */
+static int Permset_init(PyObject* obj, PyObject* args, PyObject *keywds) {
+    Permset_Object* self = (Permset_Object*) obj;
+    Entry_Object* parent = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!", &Entry_Type, &parent))
+        return -1;
+
+    if(acl_get_permset(parent->entry, &self->permset) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+
+    self->parent_entry = (PyObject*)parent;
+    Py_INCREF(parent);
+
+    return 0;
+}
+
+/* Free the Permset instance */
+static void Permset_dealloc(PyObject* obj) {
+    Permset_Object *self = (Permset_Object*) obj;
+    PyObject *err_type, *err_value, *err_traceback;
+    int have_error = PyErr_Occurred() ? 1 : 0;
+
+    if (have_error)
+        PyErr_Fetch(&err_type, &err_value, &err_traceback);
+    if(self->parent_entry != NULL) {
+        Py_DECREF(self->parent_entry);
+        self->parent_entry = NULL;
+    }
+    if (have_error)
+        PyErr_Restore(err_type, err_value, err_traceback);
+    PyObject_DEL(self);
+}
+
+static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
+    Permset_Object *self = (Permset_Object*) obj;
+
+    if(acl_clear_perms(self->permset) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    /* Return the result */
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 #endif
@@ -467,13 +581,13 @@ static PyTypeObject ACL_Type = {
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
     0,                  /* tp_compare */
-    ACL_repr,           /* tp_repr */
+    0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */
     0,                  /* tp_as_mapping */
     0,                  /* tp_hash */
     0,                  /* tp_call */
-    0,                  /* tp_str */
+    ACL_str,            /* tp_str */
     0,                  /* tp_getattro */
     0,                  /* tp_setattro */
     0,                  /* tp_as_buffer */
@@ -550,18 +664,18 @@ static PyTypeObject Entry_Type = {
     "posix1e.Entry",
     sizeof(Entry_Object),
     0,
-    Entry_dealloc,   /* tp_dealloc */
+    Entry_dealloc,      /* tp_dealloc */
     0,                  /* tp_print */
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
     0,                  /* tp_compare */
-    0, //Entry_repr,      /* tp_repr */
+    0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */
     0,                  /* tp_as_mapping */
     0,                  /* tp_hash */
     0,                  /* tp_call */
-    0,                  /* tp_str */
+    Entry_str,          /* tp_str */
     0,                  /* tp_getattro */
     0,                  /* tp_setattro */
     0,                  /* tp_as_buffer */
@@ -584,6 +698,59 @@ static PyTypeObject Entry_Type = {
     Entry_init,      /* tp_init */
     0,                  /* tp_alloc */
     Entry_new,       /* tp_new */
+};
+
+static char __Permset_clear_doc__[] = \
+"Clear all permissions in the set\n" \
+;
+
+/* Entry type methods */
+static PyMethodDef Permset_methods[] = {
+    {"clear", Permset_clear, METH_NOARGS, __Permset_clear_doc__, },
+    {NULL, NULL, 0, NULL}
+};
+
+/* The definition of the ACL Entry Type */
+static PyTypeObject Permset_Type = {
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "posix1e.Permset",
+    sizeof(Permset_Object),
+    0,
+    Permset_dealloc,    /* tp_dealloc */
+    0,                  /* tp_print */
+    0,                  /* tp_getattr */
+    0,                  /* tp_setattr */
+    0,                  /* tp_compare */
+    0, //Entry_repr,      /* tp_repr */
+    0,                  /* tp_as_number */
+    0,                  /* tp_as_sequence */
+    0,                  /* tp_as_mapping */
+    0,                  /* tp_hash */
+    0,                  /* tp_call */
+    0,                  /* tp_str */
+    0,                  /* tp_getattro */
+    0,                  /* tp_setattro */
+    0,                  /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT, /* tp_flags */
+    __acltype_doc__,    /* tp_doc */
+    0,                  /* tp_traverse */
+    0,                  /* tp_clear */
+    0,                  /* tp_richcompare */
+    0,                  /* tp_weaklistoffset */
+    0,                  /* tp_iter */
+    0,                  /* tp_iternext */
+    Permset_methods,    /* tp_methods */
+    0,                  /* tp_members */
+    0,      /* tp_getset */
+    0,                  /* tp_base */
+    0,                  /* tp_dict */
+    0,                  /* tp_descr_get */
+    0,                  /* tp_descr_set */
+    0,                  /* tp_dictoffset */
+    Permset_init,       /* tp_init */
+    0,                  /* tp_alloc */
+    Permset_new,        /* tp_new */
 };
 
 #endif
@@ -667,14 +834,16 @@ DL_EXPORT(void) initposix1e(void) {
     PyObject *m, *d;
 
     ACL_Type.ob_type = &PyType_Type;
-
     if(PyType_Ready(&ACL_Type) < 0)
         return;
 
 #ifdef HAVE_LEVEL2
     Entry_Type.ob_type = &PyType_Type;
-
     if(PyType_Ready(&Entry_Type) < 0)
+        return;
+
+    Permset_Type.ob_type = &PyType_Type;
+    if(PyType_Ready(&Permset_Type) < 0)
         return;
 #endif
 
@@ -692,6 +861,11 @@ DL_EXPORT(void) initposix1e(void) {
     Py_INCREF(&Entry_Type);
     if (PyDict_SetItemString(d, "Entry",
                              (PyObject *) &Entry_Type) < 0)
+        return;
+
+    Py_INCREF(&Permset_Type);
+    if (PyDict_SetItemString(d, "Permset",
+                             (PyObject *) &Permset_Type) < 0)
         return;
 
     /* 23.2.2 acl_perm_t values */

@@ -1,7 +1,7 @@
+#include <Python.h>
+
 #include <sys/types.h>
 #include <sys/acl.h>
-
-#include <Python.h>
 
 #ifdef HAVE_LINUX
 #include "os_linux.c"
@@ -19,6 +19,10 @@ staticforward PyTypeObject Entry_Type;
 staticforward PyTypeObject Permset_Type;
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds);
 #endif
+
+static acl_perm_t holder_ACL_EXECUTE = ACL_EXECUTE;
+static acl_perm_t holder_ACL_READ = ACL_READ;
+static acl_perm_t holder_ACL_WRITE = ACL_WRITE;
 
 typedef struct {
     PyObject_HEAD
@@ -746,7 +750,7 @@ static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
 static PyObject* Permset_get_right(PyObject *obj, void* arg) {
     Permset_Object *self = (Permset_Object*) obj;
 
-    if(get_perm(self->permset, (int)arg)) {
+    if(get_perm(self->permset, *(acl_perm_t*)arg)) {
         Py_INCREF(Py_True);
         return Py_True;
     } else {
@@ -766,9 +770,9 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     }        
     on = PyInt_AsLong(value);
     if(on)
-        nerr = acl_add_perm(self->permset, (int)arg);
+        nerr = acl_add_perm(self->permset, *(acl_perm_t*)arg);
     else
-        nerr = acl_delete_perm(self->permset, (int)arg);
+        nerr = acl_delete_perm(self->permset, *(acl_perm_t*)arg);
     if(nerr == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
@@ -1093,9 +1097,12 @@ static char __Permset_write_doc__[] = \
 
 /* Permset getset */
 static PyGetSetDef Permset_getsets[] = {
-    {"execute", Permset_get_right, Permset_set_right, __Permset_execute_doc__, (void*)ACL_EXECUTE},
-    {"read", Permset_get_right, Permset_set_right, __Permset_read_doc__, (void*)ACL_READ},
-    {"write", Permset_get_right, Permset_set_right, __Permset_write_doc__, (void*)ACL_WRITE},
+    {"execute", Permset_get_right, Permset_set_right, \
+     __Permset_execute_doc__, &holder_ACL_EXECUTE},
+    {"read", Permset_get_right, Permset_set_right, \
+     __Permset_read_doc__, &holder_ACL_READ},
+    {"write", Permset_get_right, Permset_set_right, \
+     __Permset_write_doc__, &holder_ACL_WRITE},
     {NULL}
 };
 

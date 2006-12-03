@@ -11,11 +11,16 @@ if u_sysname == "Linux":
     macros.append(("HAVE_LINUX", None))
     macros.append(("HAVE_LEVEL2", None))
     libs.append("acl")
+elif u_sysname == "GNU/kFreeBSD":
+    macros.append(("HAVE_LINUX", None))
+    macros.append(("HAVE_LEVEL2", None))
+    libs.append("acl")
 elif u_sysname == "FreeBSD":
     macros.append(("HAVE_FREEBSD", None))
     libs.append("posix1e")
 else:
-    raise ValueError("I don't know your system. Please contact the author")
+    raise ValueError("I don't know your system '%s'."
+                     " Please contact the author" % u_sysname)
 
 long_desc = """This is a C extension module for Python which
 implements POSIX ACLs manipulation. It is a wrapper on top

@@ -233,12 +233,12 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
     if((ret = PyString_FromStringAndSize(NULL, size)) == NULL)
         return NULL;
     buf = PyString_AsString(ret);
-    
+
     if((nsize = acl_copy_ext(buf, self->acl, size)) == -1) {
         Py_DECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
-    
+
     return ret;
 }
 
@@ -255,7 +255,7 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     /* Try to import the external representation */
     if((ptr = acl_copy_int(buf)) == NULL)
         return PyErr_SetFromErrno(PyExc_IOError);
-        
+
     /* Free the old acl. Should we ignore errors here? */
     if(self->acl != NULL) {
         if(acl_free(self->acl) == -1)
@@ -285,7 +285,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     acl_entry_t the_entry_t;
     Entry_Object *the_entry_obj;
     int nerr;
-    
+
     nerr = acl_get_entry(self->acl, self->entry_id, &the_entry_t);
     self->entry_id = ACL_NEXT_ENTRY;
     if(nerr == -1)
@@ -299,7 +299,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     the_entry_obj = (Entry_Object*) PyType_GenericNew(&Entry_Type, NULL, NULL);
     if(the_entry_obj == NULL)
         return NULL;
-    
+
     the_entry_obj->entry = the_entry_t;
 
     the_entry_obj->parent_acl = obj;
@@ -352,7 +352,7 @@ static char __ACL_calc_mask_doc__[] = \
 /* Updates the mask entry in the ACL */
 static PyObject* ACL_calc_mask(PyObject *obj, PyObject *args) {
     ACL_Object *self = (ACL_Object*)obj;
-    
+
     if(acl_calc_mask(&self->acl) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
@@ -402,7 +402,7 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
 
     newentry->parent_acl = obj;
     Py_INCREF(obj);
-    
+
     return (PyObject*)newentry;
 }
 
@@ -481,7 +481,7 @@ static PyObject* Entry_str(PyObject *obj) {
     } else {
         qualifier = 0;
     }
-    
+
     format = PyString_FromString("ACL entry for %s");
     if(format == NULL)
         return NULL;
@@ -592,19 +592,19 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     }
     value = *(uid_t*)p;
     acl_free(p);
-    
+
     return PyInt_FromLong(value);
 }
 
 /* Returns the parent ACL of the entry */
 static PyObject* Entry_get_parent(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
-    
+
     Py_INCREF(self->parent_acl);
     return self->parent_acl;
 }
 
-/* Returns the a new Permset representing the permset of the entry 
+/* Returns the a new Permset representing the permset of the entry
  * FIXME: Should return a new reference to the same object, which
  * should be created at init time!
 */
@@ -657,7 +657,7 @@ static char __Entry_copy_doc__[] = \
 static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
     Entry_Object *self = (Entry_Object*)obj;
     Entry_Object *other;
-    
+
     if(!PyArg_ParseTuple(args, "O!", &Entry_Type, &other))
         return NULL;
 
@@ -767,7 +767,7 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     if(!PyInt_Check(value)) {
         PyErr_SetString(PyExc_ValueError, "a maximum of one argument must be passed");
         return -1;
-    }        
+    }
     on = PyInt_AsLong(value);
     if(on)
         nerr = acl_add_perm(self->permset, *(acl_perm_t*)arg);

@@ -69,7 +69,15 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
 /* Initialization of a new ACL instance */
 static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     ACL_Object* self = (ACL_Object*) obj;
+#ifdef HAVE_LINUX
+    static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
+                              "mode", NULL };
+    const char *format = "|sisO!sH";
+    mode_t mode = 0;
+#else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
+    const char *format = "|sisO!s";
+#endif
     char *file = NULL;
     char *filedef = NULL;
     char *text = NULL;
@@ -82,9 +90,13 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
                         " must be passed");
         return -1;
     }
-    if(!PyArg_ParseTupleAndKeywords(args, keywds, "|sisO!s", kwlist,
+    if(!PyArg_ParseTupleAndKeywords(args, keywds, format, kwlist,
                                     &file, &fd, &text, &ACL_Type,
-                                    &thesrc, &filedef))
+                                    &thesrc, &filedef
+#ifdef HAVE_LINUX
+                                    , &mode
+#endif
+                                    ))
         return -1;
 
     /* Free the old acl_t without checking for error, we don't
@@ -102,6 +114,10 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         self->acl = acl_dup(thesrc->acl);
     else if(filedef != NULL)
         self->acl = acl_get_file(filedef, ACL_TYPE_DEFAULT);
+#ifdef HAVE_LINUX
+    else if(PyMapping_HasKeyString(keywds, kwlist[5]))
+        self->acl = acl_from_mode(mode);
+#endif
     else
         self->acl = acl_init(0);
 
@@ -898,6 +914,9 @@ static char __ACL_Type_doc__[] = \
 "    textual description\n" \
 "  - acl=<ACL instance>, meaning create a copy\n" \
 "    of an existing ACL instance\n" \
+"  - mode=<int>, meaning create an ACL from a numeric mode\n"
+"    (e.g. mode=0644) (this is valid only when the C library\n"
+"    provides the acl_from_mode call)\n"
 "If no parameters are passed, create an empty ACL; this\n" \
 "makes sense only when your OS supports ACL modification\n" \
 " (i.e. it implements full POSIX.1e support)\n" \

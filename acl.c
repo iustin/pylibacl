@@ -17,7 +17,8 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
 
 staticforward PyTypeObject Entry_Type;
 staticforward PyTypeObject Permset_Type;
-static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds);
+static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
+                             PyObject *keywds);
 #endif
 
 static acl_perm_t holder_ACL_EXECUTE = ACL_EXECUTE;
@@ -49,7 +50,8 @@ typedef struct {
 #endif
 
 /* Creation of a new ACL instance */
-static PyObject* ACL_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
+                         PyObject *keywds) {
     PyObject* newacl;
 
     newacl = type->tp_alloc(type, 0);
@@ -76,11 +78,13 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 
     if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||
        (keywds != NULL && PyDict_Check(keywds) && PyDict_Size(keywds) > 1)) {
-        PyErr_SetString(PyExc_ValueError, "a max of one keyword argument must be passed");
+        PyErr_SetString(PyExc_ValueError, "a max of one keyword argument"
+                        " must be passed");
         return -1;
     }
     if(!PyArg_ParseTupleAndKeywords(args, keywds, "|sisO!s", kwlist,
-                                     &file, &fd, &text, &ACL_Type, &thesrc, &filedef))
+                                    &file, &fd, &text, &ACL_Type,
+                                    &thesrc, &filedef))
         return -1;
 
     /* Free the old acl_t without checking for error, we don't
@@ -170,7 +174,8 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
         nret = acl_set_fd(fd, self->acl);
     } else {
-        PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int, or file-like object");
+        PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int,"
+                        " or file-like object");
         return 0;
     }
     if(nret == -1) {
@@ -409,7 +414,8 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
 /***** Entry type *****/
 
 /* Creation of a new Entry instance */
-static PyObject* Entry_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+static PyObject* Entry_new(PyTypeObject* type, PyObject* args,
+                           PyObject *keywds) {
     PyObject* newentry;
 
     newentry = PyType_GenericNew(type, args, keywds);
@@ -495,9 +501,11 @@ static PyObject* Entry_str(PyObject *obj) {
     } else if(tag == ACL_OTHER) {
         PyTuple_SetItem(list, 0, PyString_FromString("the others"));
     } else if(tag == ACL_USER) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("user with uid %d", qualifier));
+        PyTuple_SetItem(list, 0, PyString_FromFormat("user with uid %d",
+                                                     qualifier));
     } else if(tag == ACL_GROUP) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("group with gid %d", qualifier));
+        PyTuple_SetItem(list, 0, PyString_FromFormat("group with gid %d",
+                                                     qualifier));
     } else if(tag == ACL_MASK) {
         PyTuple_SetItem(list, 0, PyString_FromString("the mask"));
     } else {
@@ -671,7 +679,8 @@ static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
 /**** Permset type *****/
 
 /* Creation of a new Permset instance */
-static PyObject* Permset_new(PyTypeObject* type, PyObject* args, PyObject *keywds) {
+static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
+                             PyObject *keywds) {
     PyObject* newpermset;
 
     newpermset = PyType_GenericNew(type, args, keywds);
@@ -765,7 +774,8 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     int nerr;
 
     if(!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_ValueError, "a maximum of one argument must be passed");
+        PyErr_SetString(PyExc_ValueError, "a maximum of one argument must"
+                        " be passed");
         return -1;
     }
     on = PyInt_AsLong(value);
@@ -898,8 +908,10 @@ static PyMethodDef ACL_methods[] = {
     {"applyto", ACL_applyto, METH_VARARGS, __applyto_doc__},
     {"valid", ACL_valid, METH_NOARGS, __valid_doc__},
 #ifdef HAVE_LEVEL2
-    {"__getstate__", ACL_get_state, METH_NOARGS, "Dumps the ACL to an external format."},
-    {"__setstate__", ACL_set_state, METH_VARARGS, "Loads the ACL from an external format."},
+    {"__getstate__", ACL_get_state, METH_NOARGS,
+     "Dumps the ACL to an external format."},
+    {"__setstate__", ACL_set_state, METH_VARARGS,
+     "Loads the ACL from an external format."},
     {"delete_entry", ACL_delete_entry, METH_VARARGS, __ACL_delete_entry_doc__},
     {"calc_mask", ACL_calc_mask, METH_NOARGS, __ACL_calc_mask_doc__},
     {"append", ACL_append, METH_VARARGS, __ACL_append_doc__},
@@ -995,8 +1007,10 @@ static char __Entry_permset_doc__[] = \
 
 /* Entry getset */
 static PyGetSetDef Entry_getsets[] = {
-    {"tag_type", Entry_get_tag_type, Entry_set_tag_type, __Entry_tagtype_doc__},
-    {"qualifier", Entry_get_qualifier, Entry_set_qualifier, __Entry_qualifier_doc__},
+    {"tag_type", Entry_get_tag_type, Entry_set_tag_type,
+     __Entry_tagtype_doc__},
+    {"qualifier", Entry_get_qualifier, Entry_set_qualifier,
+     __Entry_qualifier_doc__},
     {"parent", Entry_get_parent, NULL, __Entry_parent_doc__},
     {"permset", Entry_get_permset, Entry_set_permset, __Entry_permset_doc__},
     {NULL}
@@ -1197,7 +1211,8 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
 
 /* The module methods */
 static PyMethodDef aclmodule_methods[] = {
-    {"delete_default", aclmodule_delete_default, METH_VARARGS, __deletedef_doc__},
+    {"delete_default", aclmodule_delete_default, METH_VARARGS,
+     __deletedef_doc__},
     {NULL, NULL, 0, NULL}
 };
 

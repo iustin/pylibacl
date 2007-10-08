@@ -72,11 +72,11 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
                               "mode", NULL };
-    const char *format = "|sisO!sH";
+    char *format = "|sisO!sH";
     mode_t mode = 0;
 #else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
-    const char *format = "|sisO!s";
+    char *format = "|sisO!s";
 #endif
     char *file = NULL;
     char *filedef = NULL;

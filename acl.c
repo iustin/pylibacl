@@ -1335,4 +1335,14 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "ACL_OTHER", ACL_OTHER);
 
 #endif
+
+#ifdef HAVE_LINUX
+    /* Linux libacl specific acl_to_any_text constants */
+    PyModule_AddIntConstant(m, "TEXT_ABBREVIATE", TEXT_ABBREVIATE);
+    PyModule_AddIntConstant(m, "TEXT_NUMERIC_IDS", TEXT_NUMERIC_IDS);
+    PyModule_AddIntConstant(m, "TEXT_SOME_EFFECTIVE", TEXT_SOME_EFFECTIVE);
+    PyModule_AddIntConstant(m, "TEXT_ALL_EFFECTIVE", TEXT_ALL_EFFECTIVE);
+    PyModule_AddIntConstant(m, "TEXT_SMART_INDENT", TEXT_SMART_INDENT);
+#endif
+
 }

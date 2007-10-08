@@ -252,6 +252,38 @@ static PyObject* ACL_check(PyObject* obj, PyObject* args) {
     return PyTuple_Pack(2, PyInt_FromLong(result), PyInt_FromLong(eindex));
 }
 
+/* Implementation of the rich compare for ACLs */
+static PyObject* ACL_richcompare(PyObject* o1, PyObject* o2, int op) {
+    ACL_Object *acl1, *acl2;
+    int n;
+    PyObject *ret;
+
+    if(!PyObject_IsInstance(o2, (PyObject*)&ACL_Type)) {
+        if(op == Py_EQ)
+            Py_RETURN_FALSE;
+        if(op == Py_NE)
+            Py_RETURN_TRUE;
+        PyErr_SetString(PyExc_TypeError, "can only compare to an ACL");
+        return NULL;
+    }
+
+    acl1 = (ACL_Object*)o1;
+    acl2 = (ACL_Object*)o2;
+    if((n=acl_cmp(acl1->acl, acl2->acl))==-1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    switch(op) {
+    case Py_EQ:
+        ret = n == 0 ? Py_True : Py_False;
+        break;
+    case Py_NE:
+        ret = n == 1 ? Py_True : Py_False;
+        break;
+    default:
+        ret = Py_NotImplemented;
+    }
+    Py_INCREF(ret);
+    return ret;
+}
 #endif
 
 /* Custom methods */
@@ -1064,7 +1096,11 @@ static PyTypeObject ACL_Type = {
     __ACL_Type_doc__,   /* tp_doc */
     0,                  /* tp_traverse */
     0,                  /* tp_clear */
+#ifdef HAVE_LINUX
+    ACL_richcompare,    /* tp_richcompare */
+#else
     0,                  /* tp_richcompare */
+#endif
     0,                  /* tp_weaklistoffset */
 #ifdef HAVE_LEVEL2
     ACL_iter,

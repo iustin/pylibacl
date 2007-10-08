@@ -286,6 +286,13 @@ static PyObject* ACL_richcompare(PyObject* o1, PyObject* o2, int op) {
 }
 #endif
 
+/* Implementation of the compare for ACLs */
+static int ACL_nocmp(PyObject* o1, PyObject* o2) {
+
+    PyErr_SetString(PyExc_TypeError, "cannot compare ACLs using cmp()");
+    return -1;
+}
+
 /* Custom methods */
 static char __applyto_doc__[] =
     "Apply the ACL to a file or filehandle.\n"
@@ -1081,7 +1088,7 @@ static PyTypeObject ACL_Type = {
     0,                  /* tp_print */
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
-    0,                  /* tp_compare */
+    ACL_nocmp,          /* tp_compare */
     0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */

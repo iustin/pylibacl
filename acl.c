@@ -216,6 +216,42 @@ static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
     return ret;
 }
 
+static char __check_doc__[] =
+    "Check the ACL validity.\n"
+    "\n"
+    "This is a non-portable, Linux specific extension that allow more\n"
+    "information to be retrieved in case an ACL is not valid than the\n"
+    "validate() method.\n"
+    "\n"
+    "This method will return either False (the ACL is valid), or a tuple\n"
+    "with two elements. The first element is one of the following\n"
+    "constants:\n"
+    "  - ACL_MULTI_ERROR: The ACL contains multiple entries that have a\n"
+    "                     tag type that may occur at most once\n"
+    "  - ACL_DUPLICATE_ERROR: The ACL contains multiple ACL_USER or \n"
+    "                         ACL_GROUP entries  with the same ID\n"
+    "  - ACL_MISS_ERROR: A required entry is missing\n"
+    "  - ACL_ENTRY_ERROR: The ACL contains an invalid entry tag type\n"
+    "\n"
+    "The second element of the tuple is the index of the entry that is\n"
+    "invalid (in the same order as by iterating over the ACL entry)\n"
+    ;
+
+/* The acl_check method */
+static PyObject* ACL_check(PyObject* obj, PyObject* args) {
+    ACL_Object *self = (ACL_Object*) obj;
+    int result;
+    int eindex;
+
+    if((result = acl_check(self->acl, &eindex)) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    if(result == 0) {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+    return PyTuple_Pack(2, PyInt_FromLong(result), PyInt_FromLong(eindex));
+}
+
 #endif
 
 /* Custom methods */
@@ -987,6 +1023,7 @@ static PyMethodDef ACL_methods[] = {
 #ifdef HAVE_LINUX
     {"to_any_text", (PyCFunction)ACL_to_any_text, METH_VARARGS | METH_KEYWORDS,
      __to_any_text_doc__},
+    {"check", ACL_check, METH_NOARGS, __check_doc__},
 #endif
 #ifdef HAVE_LEVEL2
     {"__getstate__", ACL_get_state, METH_NOARGS,

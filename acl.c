@@ -162,6 +162,62 @@ static PyObject* ACL_str(PyObject *obj) {
     return ret;
 }
 
+#ifdef HAVE_LINUX
+static char __to_any_text_doc__[] =
+  "Convert the ACL to a custom text format.\n"
+  "\n"
+  "This method encapsulates the acl_to_any_text function. It allows a \n"
+  "customized text format to be generated for the ACL. See\n"
+  "acl_to_any_text(3) for more details.\n"
+  "\n"
+  "Parameters:\n"
+  "  - prefix: if given, this string will be prepended to all lines\n"
+  "  - separator: a single character (defaults to '\\n'); this will be\n"
+  "               user to separate the entries in the ACL\n"
+  "  - options: a bitwise combination of:\n"
+  "      TEXT_ABBREVIATE: use 'u' instead of 'user', 'g' instead of \n"
+  "                       'group', etc.\n"
+  "      TEXT_NUMERIC_IDS: User and group IDs are included as decimal\n"
+  "                        numbers instead of names\n"
+  "      TEXT_SOME_EFFECTIVE: Include comments denoting the effective\n"
+  "                           permissions when some are masked\n"
+  "      TEXT_ALL_EFFECTIVE: Include comments after all ACL entries\n"
+  "                          affected by an ACL_MASK entry\n"
+  "      TEXT_SMART_INDENT: Used in combination with the _EFFECTIVE\n"
+  "                         options, this will ensure that comments \n"
+  "                         are alligned to the fourth tab position\n"
+  "                         (assuming one tab equal eight spaces\n"
+  ;
+
+/* Converts the acl to a custom text format */
+static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
+                                 PyObject *kwds) {
+    char *text;
+    ACL_Object *self = (ACL_Object*) obj;
+    PyObject *ret;
+    char *arg_prefix = NULL;
+    char arg_separator = '\n';
+    int arg_options = 0;
+    static char *kwlist[] = {"prefix", "separator", "options", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|sci", kwlist, &arg_prefix,
+                                     &arg_separator, &arg_options))
+      return NULL;
+
+    text = acl_to_any_text(self->acl, arg_prefix, arg_separator, arg_options);
+    if(text == NULL) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    ret = PyString_FromString(text);
+    if(acl_free(text) != 0) {
+        Py_DECREF(ret);
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    return ret;
+}
+
+#endif
+
 /* Custom methods */
 static char __applyto_doc__[] =
     "Apply the ACL to a file or filehandle.\n"
@@ -928,6 +984,10 @@ static char __ACL_Type_doc__[] =
 static PyMethodDef ACL_methods[] = {
     {"applyto", ACL_applyto, METH_VARARGS, __applyto_doc__},
     {"valid", ACL_valid, METH_NOARGS, __valid_doc__},
+#ifdef HAVE_LINUX
+    {"to_any_text", (PyCFunction)ACL_to_any_text, METH_VARARGS | METH_KEYWORDS,
+     __to_any_text_doc__},
+#endif
 #ifdef HAVE_LEVEL2
     {"__getstate__", ACL_get_state, METH_NOARGS,
      "Dumps the ACL to an external format."},

@@ -17,6 +17,8 @@ elif u_sysname == "GNU/kFreeBSD":
     libs.append("acl")
 elif u_sysname == "FreeBSD":
     macros.append(("HAVE_FREEBSD", None))
+elif u_sysname == "Darwin":
+    libs.append("pthread")
 else:
     raise ValueError("I don't know your system '%s'."
                      " Please contact the author" % u_sysname)

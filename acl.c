@@ -1403,6 +1403,12 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "TEXT_SOME_EFFECTIVE", TEXT_SOME_EFFECTIVE);
     PyModule_AddIntConstant(m, "TEXT_ALL_EFFECTIVE", TEXT_ALL_EFFECTIVE);
     PyModule_AddIntConstant(m, "TEXT_SMART_INDENT", TEXT_SMART_INDENT);
+
+    /* Linux libacl specific acl_check constants */
+    PyModule_AddIntConstant(m, "ACL_MULTI_ERROR", ACL_MULTI_ERROR);
+    PyModule_AddIntConstant(m, "ACL_DUPLICATE_ERROR", ACL_DUPLICATE_ERROR);
+    PyModule_AddIntConstant(m, "ACL_MISS_ERROR", ACL_MISS_ERROR);
+    PyModule_AddIntConstant(m, "ACL_ENTRY_ERROR", ACL_ENTRY_ERROR);
 #endif
 
 }

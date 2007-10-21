@@ -1,0 +1,8 @@
+version 0.3
+-----------
+
+  Under Linux, implement more functions from libacl:
+  - add ACL(mode=...), implementing acl_from_mode
+  - add ACL().to_any_text, implementing acl_to_any_text
+  - add ACL comparison, using acl_cmp
+  - add ACL().check, which is a more descriptive function than validate

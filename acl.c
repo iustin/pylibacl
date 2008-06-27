@@ -1491,4 +1491,17 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "ACL_ENTRY_ERROR", ACL_ENTRY_ERROR);
 #endif
 
+    /* Document extended functionality via easy-to-use constants */
+#ifdef HAVE_LEVEL2
+    PyModule_AddIntConstant(m, "HAS_ACL_MANIPULATION", 1);
+#else
+    PyModule_AddIntConstant(m, "HAS_ACL_MANIPULATION", 0);
+#endif
+
+#ifdef HAVE_LINUX
+    PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 1);
+#else
+    PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 0);
+#endif
+
 }

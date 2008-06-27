@@ -4,17 +4,22 @@
 #include <sys/acl.h>
 
 #ifdef HAVE_LINUX
-#include "os_linux.c"
+#include <acl/libacl.h>
+#define get_perm acl_get_perm
+#elif HAVE_FREEBSD
+#define get_perm acl_get_perm_np
 #endif
 
 staticforward PyTypeObject ACL_Type;
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args);
 static PyObject* ACL_valid(PyObject* obj, PyObject* args);
 
-#ifdef HAVE_LEVEL2
+#ifdef HAVE_ACL_COPY_EXT
 static PyObject* ACL_get_state(PyObject *obj, PyObject* args);
 static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
+#endif
 
+#ifdef HAVE_LEVEL2
 staticforward PyTypeObject Entry_Type;
 staticforward PyTypeObject Permset_Type;
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
@@ -372,8 +377,7 @@ static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     }
 }
 
-#ifdef HAVE_LEVEL2
-
+#ifdef HAVE_ACL_COPY_EXT
 static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *ret;
@@ -422,6 +426,9 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     Py_INCREF(Py_None);
     return Py_None;
 }
+#endif
+
+#ifdef HAVE_LEVEL2
 
 /* tp_iter for the ACL type; since it can be iterated only
  * destructively, the type is its iterator
@@ -1064,11 +1071,13 @@ static PyMethodDef ACL_methods[] = {
      __to_any_text_doc__},
     {"check", ACL_check, METH_NOARGS, __check_doc__},
 #endif
-#ifdef HAVE_LEVEL2
+#ifdef HAVE_ACL_COPYEXT
     {"__getstate__", ACL_get_state, METH_NOARGS,
      "Dumps the ACL to an external format."},
     {"__setstate__", ACL_set_state, METH_VARARGS,
      "Loads the ACL from an external format."},
+#endif
+#ifdef HAVE_LEVEL2
     {"delete_entry", ACL_delete_entry, METH_VARARGS, __ACL_delete_entry_doc__},
     {"calc_mask", ACL_calc_mask, METH_NOARGS, __ACL_calc_mask_doc__},
     {"append", ACL_append, METH_VARARGS, __ACL_append_doc__},

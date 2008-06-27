@@ -7,6 +7,8 @@ import tempfile
 
 import posix1e
 
+TEST_DIR=os.environ.get("TESTDIR", ".")
+
 class aclTest(unittest.TestCase):
     """Unittests for ACLs"""
 
@@ -24,13 +26,13 @@ class aclTest(unittest.TestCase):
 
     def _getfile(self):
         """create a temp file"""
-        fh, fname = tempfile.mkstemp(".test", "xattr-", ".")
+        fh, fname = tempfile.mkstemp(".test", "xattr-", TEST_DIR)
         self.rmfiles.append(fname)
         return fh, fname
 
     def _getdir(self):
         """create a temp dir"""
-        dname = tempfile.mkdtemp(".test", "xattr-", ".")
+        dname = tempfile.mkdtemp(".test", "xattr-", TEST_DIR)
         self.rmdirs.append(dname)
         return dname
 

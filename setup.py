@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import distutils, os
-from distutils.core import setup, Extension
+import os
+from setuptools import setup, Extension
 
 (u_sysname, u_nodename, u_release, u_version, u_machine) = os.uname()
 

@@ -6,36 +6,25 @@ import os
 import tempfile
 
 import posix1e
+from posix1e import *
 
 TEST_DIR=os.environ.get("TESTDIR", ".")
 
 BASIC_ACL_TEXT="u::rw,g::r,o::-"
 
-def has_from_mode(fn):
+def _skip_test(fn):
+    """Wrapper to skip a test"""
+    new_fn = lambda x: None
+    new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
+    return new_fn
+
+
+def has_ext(extension):
     """Decorator to skip tests based on platform support"""
-    if not posix1e.HAS_ACL_FROM_MODE:
-        new_fn = lambda x: None
-        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
-        fn = new_fn
-    return fn
-
-
-def has_acl_entry(fn):
-    """Decorator to skip tests based on platform support"""
-    if not posix1e.HAS_ACL_ENTRY:
-        new_fn = lambda x: None
-        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
-        fn = new_fn
-    return fn
-
-
-def has_acl_check(fn):
-    """Decorator to skip tests based on platform support"""
-    if not posix1e.HAS_ACL_CHECK:
-        new_fn = lambda x: None
-        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
-        fn = new_fn
-    return fn
+    if not extension:
+        return _skip_test
+    else:
+        return lambda x: x
 
 
 class aclTest:
@@ -112,14 +101,14 @@ class LoadTests(aclTest, unittest.TestCase):
 class AclExtensions(aclTest, unittest.TestCase):
     """ACL extensions checks"""
 
-    @has_from_mode
+    @has_ext(HAS_ACL_FROM_MODE)
     def testFromMode(self):
         """Test loading ACLs from an octal mode"""
         acl1 = posix1e.ACL(mode=0644)
         self.failUnless(acl1.valid(),
                         "ACL created via octal mode shoule be valid")
 
-    @has_acl_check
+    @has_ext(HAS_ACL_CHECK)
     def testAclCheck(self):
         """Test the acl_check method"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -150,7 +139,7 @@ class WriteTests(aclTest, unittest.TestCase):
 class ModificationTests(aclTest, unittest.TestCase):
     """ACL modification tests"""
 
-    @has_acl_entry
+    @has_ext(HAS_ACL_ENTRY)
     def testAppend(self):
         """Test append a new Entry to the ACL"""
         acl = posix1e.ACL()
@@ -158,7 +147,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         e.tag_type = posix1e.ACL_OTHER
         acl.calc_mask()
 
-    @has_acl_entry
+    @has_ext(HAS_ACL_ENTRY)
     def testDelete(self):
         """Test delete Entry from the ACL"""
         acl = posix1e.ACL()
@@ -168,7 +157,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         acl.delete_entry(e)
         acl.calc_mask()
 
-    @has_acl_entry
+    @has_ext(HAS_ACL_ENTRY)
     def testDoubleEntries(self):
         """Test double entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -182,7 +171,7 @@ class ModificationTests(aclTest, unittest.TestCase):
                         "ACL containing duplicate entries should not be valid")
             acl.delete_entry(e)
 
-    @has_acl_entry
+    @has_ext(HAS_ACL_ENTRY)
     def testMultipleGoodEntries(self):
         """Test multiple valid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -198,7 +187,8 @@ class ModificationTests(aclTest, unittest.TestCase):
                 self.failUnless(acl.valid(),
                                "ACL should be able to hold multiple"
                                 " user/group entries")
-    @has_acl_entry
+
+    @has_ext(HAS_ACL_ENTRY)
     def testMultipleBadEntries(self):
         """Test multiple invalid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -223,7 +213,7 @@ class ModificationTests(aclTest, unittest.TestCase):
             acl.delete_entry(e1)
             acl.delete_entry(e2)
 
-    @has_acl_entry
+    @has_ext(HAS_ACL_ENTRY)
     def testPermset(self):
         """Test permissions"""
         acl = posix1e.ACL()

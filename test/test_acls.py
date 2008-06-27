@@ -9,6 +9,7 @@ import posix1e
 
 TEST_DIR=os.environ.get("TESTDIR", ".")
 
+BASIC_ACL_TEXT="u::rw,g::r,o::-"
 
 def has_from_mode(fn):
     """Decorator to skip tests based on platform support"""
@@ -104,7 +105,7 @@ class LoadTests(aclTest, unittest.TestCase):
 
     def testFromText(self):
         """Test creating an ACL from text"""
-        acl1 = posix1e.ACL(text="u::rx,g::-,o::-")
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.failUnless(acl1.valid(),
                         "ACL based on standard description should be valid")
 
@@ -121,7 +122,7 @@ class AclExtensions(aclTest, unittest.TestCase):
     @has_acl_check
     def testAclCheck(self):
         """Test the acl_check method"""
-        acl1 = posix1e.ACL(text="u::rx,g::-,o::-")
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.failIf(acl1.check(), "ACL is not valid")
         acl2 = posix1e.ACL()
         self.failUnless(acl2.check(), "Empty ACL should not be valid")
@@ -170,7 +171,7 @@ class ModificationTests(aclTest, unittest.TestCase):
     @has_acl_entry
     def testDoubleEntries(self):
         """Test double entries"""
-        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.failUnless(acl.valid(), "ACL is not valid")
         for tag_type in (posix1e.ACL_USER_OBJ, posix1e.ACL_GROUP_OBJ,
                          posix1e.ACL_OTHER):
@@ -184,7 +185,7 @@ class ModificationTests(aclTest, unittest.TestCase):
     @has_acl_entry
     def testMultipleGoodEntries(self):
         """Test multiple valid entries"""
-        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.failUnless(acl.valid(), "ACL is not valid")
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
@@ -200,7 +201,7 @@ class ModificationTests(aclTest, unittest.TestCase):
     @has_acl_entry
     def testMultipleBadEntries(self):
         """Test multiple invalid entries"""
-        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.failUnless(acl.valid(), "ACL built from standard description"
                         " should be valid")
         for tag_type in (posix1e.ACL_USER,

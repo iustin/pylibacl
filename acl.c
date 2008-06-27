@@ -1379,10 +1379,51 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
     return Py_None;
 }
 
+#ifdef HAVE_LINUX
+static char __has_extended_doc__[] =
+    "Check if a file or filehandle has an extended ACL.\n"
+    "\n"
+    "Parameter:\n"
+    "  - either a filename or a file-like object or an integer; this\n"
+    "    represents the filesystem object on which to act\n"
+    ;
+
+/* Check for extended ACL a file or fd */
+static PyObject* aclmodule_has_extended(PyObject* obj, PyObject* args) {
+    PyObject *myarg;
+    int nret;
+    int fd;
+
+    if (!PyArg_ParseTuple(args, "O", &myarg))
+        return NULL;
+
+    if(PyString_Check(myarg)) {
+        const char *filename = PyString_AS_STRING(myarg);
+        nret = acl_extended_file(filename);
+    } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
+        nret = acl_extended_fd(fd);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int,"
+                        " or file-like object");
+        return 0;
+    }
+    if(nret == -1) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+
+    /* Return the result */
+    return PyBool_FromLong(nret);
+}
+#endif
+
 /* The module methods */
 static PyMethodDef aclmodule_methods[] = {
     {"delete_default", aclmodule_delete_default, METH_VARARGS,
      __deletedef_doc__},
+#ifdef HAVE_LINUX
+    {"has_extended", aclmodule_has_extended, METH_VARARGS,
+     __has_extended_doc__},
+#endif
     {NULL, NULL, 0, NULL}
 };
 
@@ -1506,8 +1547,10 @@ void initposix1e(void) {
     /* declare the Linux extensions */
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 1);
     PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 1);
+    PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 1);
 #else
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 0);
     PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 0);
+    PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 0);
 #endif
 }

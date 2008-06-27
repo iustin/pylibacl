@@ -116,6 +116,23 @@ class AclExtensions(aclTest, unittest.TestCase):
         acl2 = posix1e.ACL()
         self.failUnless(acl2.check(), "Empty ACL should not be valid")
 
+    @has_ext(HAS_EXTENDED_CHECK)
+    def testExtended(self):
+        """Test the acl_extended function"""
+        fd, fname = self._getfile()
+        basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
+        basic_acl.applyto(fd)
+        for item in fd, fname:
+            self.failIf(has_extended(item),
+                        "A simple ACL should not be reported as extended")
+        enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
+        self.failUnless(enhanced_acl.valid(),
+                        "Failure to build an extended ACL")
+        enhanced_acl.applyto(fd)
+        for item in fd, fname:
+            self.failUnless(has_extended(item),
+                        "An extended ACL should be reported as such")
+
 
 class WriteTests(aclTest, unittest.TestCase):
     """Write tests"""

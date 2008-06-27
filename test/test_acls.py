@@ -9,8 +9,36 @@ import posix1e
 
 TEST_DIR=os.environ.get("TESTDIR", ".")
 
-class aclTest(unittest.TestCase):
-    """Unittests for ACLs"""
+
+def has_from_mode(fn):
+    """Decorator to skip tests based on platform support"""
+    if not posix1e.HAS_ACL_FROM_MODE:
+        new_fn = lambda x: None
+        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
+        fn = new_fn
+    return fn
+
+
+def has_acl_entry(fn):
+    """Decorator to skip tests based on platform support"""
+    if not posix1e.HAS_ACL_ENTRY:
+        new_fn = lambda x: None
+        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
+        fn = new_fn
+    return fn
+
+
+def has_acl_check(fn):
+    """Decorator to skip tests based on platform support"""
+    if not posix1e.HAS_ACL_CHECK:
+        new_fn = lambda x: None
+        new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
+        fn = new_fn
+    return fn
+
+
+class aclTest:
+    """Support functions ACLs"""
 
     def setUp(self):
         """set up function"""
@@ -44,18 +72,22 @@ class aclTest(unittest.TestCase):
         os.symlink(fname + ".non-existent", fname)
         return fname
 
+
+class LoadTests(aclTest, unittest.TestCase):
+    """Load/create tests"""
     def testFromFile(self):
         """Test loading ACLs from a file"""
         _, fname = self._getfile()
         acl1 = posix1e.ACL(file=fname)
-        self.failUnless(acl1.valid(), "ACL is not valid")
+        self.failUnless(acl1.valid(), "ACL read from file should be valid")
 
     def testFromDir(self):
         """Test loading ACLs from a directory"""
         dname = self._getdir()
         acl1 = posix1e.ACL(file=dname)
         acl2 = posix1e.ACL(filedef=dname)
-        self.failUnless(acl1.valid(), "ACL is not valid")
+        self.failUnless(acl1.valid(),
+                        "ACL read from directory should be valid")
         # default ACLs might or might not be valid; missing ones are
         # not valid, so we don't test acl2 for validity
 
@@ -63,20 +95,154 @@ class aclTest(unittest.TestCase):
         """Test loading ACLs from a file descriptor"""
         fd, _ = self._getfile()
         acl1 = posix1e.ACL(fd=fd)
-        self.failUnless(acl1.valid(), "ACL is not valid")
-
-    if posix1e.HAS_ACL_FROM_MODE:
-        def testFromMode(self):
-            """Test loading ACLs from an octal mode"""
-            acl1 = posix1e.ACL(mode=0644)
-            self.failUnless(acl1.valid(), "ACL is not valid")
-    else:
-        def testFromMode(self):
-            """Test loading ACLs from an octal mode (SKIPPED)"""
+        self.failUnless(acl1.valid(), "ACL read from fd should be valid")
 
     def testFromEmpty(self):
         """Test creating an empty ACL"""
         acl1 = posix1e.ACL()
+        self.failIf(acl1.valid(), "Empty ACL should not be valid")
+
+    def testFromText(self):
+        """Test creating an ACL from text"""
+        acl1 = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failUnless(acl1.valid(),
+                        "ACL based on standard description should be valid")
+
+class AclExtensions(aclTest, unittest.TestCase):
+    """ACL extensions checks"""
+
+    @has_from_mode
+    def testFromMode(self):
+        """Test loading ACLs from an octal mode"""
+        acl1 = posix1e.ACL(mode=0644)
+        self.failUnless(acl1.valid(),
+                        "ACL created via octal mode shoule be valid")
+
+    @has_acl_check
+    def testAclCheck(self):
+        """Test the acl_check method"""
+        acl1 = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failIf(acl1.check(), "ACL is not valid")
+        acl2 = posix1e.ACL()
+        self.failUnless(acl2.check(), "Empty ACL should not be valid")
+
+
+class WriteTests(aclTest, unittest.TestCase):
+    """Write tests"""
+
+    def testDeleteDefault(self):
+        """Test removing the default ACL"""
+        dname = self._getdir()
+        posix1e.delete_default(dname)
+
+    def testReapply(self):
+        """Test re-applying an ACL"""
+        fd, fname = self._getfile()
+        acl1 = posix1e.ACL(fd=fd)
+        acl1.applyto(fd)
+        acl1.applyto(fname)
+        dname = self._getdir()
+        acl2 = posix1e.ACL(file=fname)
+        acl2.applyto(dname)
+
+
+class ModificationTests(aclTest, unittest.TestCase):
+    """ACL modification tests"""
+
+    @has_acl_entry
+    def testAppend(self):
+        """Test append a new Entry to the ACL"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        e.tag_type = posix1e.ACL_OTHER
+        acl.calc_mask()
+
+    @has_acl_entry
+    def testDelete(self):
+        """Test delete Entry from the ACL"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        e.tag_type = posix1e.ACL_OTHER
+        acl.calc_mask()
+        acl.delete_entry(e)
+        acl.calc_mask()
+
+    @has_acl_entry
+    def testDoubleEntries(self):
+        """Test double entries"""
+        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failUnless(acl.valid(), "ACL is not valid")
+        for tag_type in (posix1e.ACL_USER_OBJ, posix1e.ACL_GROUP_OBJ,
+                         posix1e.ACL_OTHER):
+            e = acl.append()
+            e.tag_type = tag_type
+            e.permset.clear()
+            self.failIf(acl.valid(),
+                        "ACL containing duplicate entries should not be valid")
+            acl.delete_entry(e)
+
+    @has_acl_entry
+    def testMultipleGoodEntries(self):
+        """Test multiple valid entries"""
+        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failUnless(acl.valid(), "ACL is not valid")
+        for tag_type in (posix1e.ACL_USER,
+                         posix1e.ACL_GROUP):
+            for obj_id in range(5):
+                e = acl.append()
+                e.tag_type = tag_type
+                e.qualifier = obj_id
+                e.permset.clear()
+                acl.calc_mask()
+                self.failUnless(acl.valid(),
+                               "ACL should be able to hold multiple"
+                                " user/group entries")
+    @has_acl_entry
+    def testMultipleBadEntries(self):
+        """Test multiple invalid entries"""
+        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failUnless(acl.valid(), "ACL built from standard description"
+                        " should be valid")
+        for tag_type in (posix1e.ACL_USER,
+                         posix1e.ACL_GROUP):
+            e1 = acl.append()
+            e1.tag_type = tag_type
+            e1.qualifier = 0
+            e1.permset.clear()
+            acl.calc_mask()
+            self.failUnless(acl.valid(), "ACL should be able to add a"
+                            " user/group entry")
+            e2 = acl.append()
+            e2.tag_type = tag_type
+            e2.qualifier = 0
+            e2.permset.clear()
+            acl.calc_mask()
+            self.failIf(acl.valid(), "ACL should not validate when"
+                        " containing two duplicate entries")
+            acl.delete_entry(e1)
+            acl.delete_entry(e2)
+
+    @has_acl_entry
+    def testPermset(self):
+        """Test permissions"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        ps = e.permset
+        ps.clear()
+        pmap = {
+            posix1e.ACL_READ: "read",
+            posix1e.ACL_WRITE: "write",
+            posix1e.ACL_EXECUTE: "execute",
+            }
+        for perm in pmap:
+            self.failIf(ps.test(perm), "Empty permission set should not"
+                        " have permission '%s'" % pmap[perm])
+            ps.add(perm)
+            self.failUnless(ps.test(perm), "Permission '%s' should exist"
+                        " after addition" % pmap[perm])
+            ps.delete(perm)
+            self.failIf(ps.test(perm), "Permission '%s' should not exist"
+                        " after deletion" % pmap[perm])
 
 
 if __name__ == "__main__":

@@ -1474,6 +1474,10 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "ACL_MASK", ACL_MASK);
     PyModule_AddIntConstant(m, "ACL_OTHER", ACL_OTHER);
 
+    /* Document extended functionality via easy-to-use constants */
+    PyModule_AddIntConstant(m, "HAS_ACL_ENTRY", 1);
+#else
+    PyModule_AddIntConstant(m, "HAS_ACL_ENTRY", 0);
 #endif
 
 #ifdef HAVE_LINUX
@@ -1489,19 +1493,12 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "ACL_DUPLICATE_ERROR", ACL_DUPLICATE_ERROR);
     PyModule_AddIntConstant(m, "ACL_MISS_ERROR", ACL_MISS_ERROR);
     PyModule_AddIntConstant(m, "ACL_ENTRY_ERROR", ACL_ENTRY_ERROR);
-#endif
 
-    /* Document extended functionality via easy-to-use constants */
-#ifdef HAVE_LEVEL2
-    PyModule_AddIntConstant(m, "HAS_ACL_MANIPULATION", 1);
-#else
-    PyModule_AddIntConstant(m, "HAS_ACL_MANIPULATION", 0);
-#endif
-
-#ifdef HAVE_LINUX
+    /* declare the Linux extensions */
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 1);
+    PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 1);
 #else
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 0);
+    PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 0);
 #endif
-
 }

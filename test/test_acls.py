@@ -28,9 +28,9 @@ import tempfile
 import posix1e
 from posix1e import *
 
-TEST_DIR=os.environ.get("TESTDIR", ".")
+TEST_DIR = os.environ.get("TESTDIR", ".")
 
-BASIC_ACL_TEXT="u::rw,g::r,o::-"
+BASIC_ACL_TEXT = "u::rw,g::r,o::-"
 
 def _skip_test(fn):
     """Wrapper to skip a test"""

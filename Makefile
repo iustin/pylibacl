@@ -1,18 +1,17 @@
 .PHONY: doc log test
 
-doc: posix1e.txt posix1e.html
-
-build/lib.linux-x86_64-2.4/posix1e.so: acl.c
-	./setup.py build
+all: doc test
 
 posix1e.so: acl.c
 	./setup.py build_ext --inplace
 
-posix1e.txt: posix1e.so
-	pydoc posix1e > posix1e.txt
-
-posix1e.html: posix1e.so
-	pydoc -w posix1e
+doc: posix1e.so
+	epydoc -q -o html --name pylibacl \
+		--url http://pylibacl.sourceforge.net/ \
+		--show-frames \
+		--docformat epytext \
+		--no-sourcecode \
+		posix1e
 
 test:
 	python2.4 ./setup.py test

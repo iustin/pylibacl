@@ -289,6 +289,25 @@ static PyObject* ACL_richcompare(PyObject* o1, PyObject* o2, int op) {
     Py_INCREF(ret);
     return ret;
 }
+
+static char __equiv_mode_doc__[] =
+    "Return the octal mode the ACL is equivalent to.\n"
+    "\n"
+    "This is a non-portable, Linux specific extension that checks\n"
+    "if the ACL is a basic ACL and returns the corresponding mode.\n"
+    "\n"
+    "An IOerror exception will be raised if the ACL is an extended ACL\n"
+    ;
+
+/* The acl_equiv_mode method */
+static PyObject* ACL_equiv_mode(PyObject* obj, PyObject* args) {
+    ACL_Object *self = (ACL_Object*) obj;
+    mode_t mode;
+
+    if(acl_equiv_mode(self->acl, &mode) == -1)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    return PyInt_FromLong(mode);
+}
 #endif
 
 /* Implementation of the compare for ACLs */
@@ -1070,6 +1089,7 @@ static PyMethodDef ACL_methods[] = {
     {"to_any_text", (PyCFunction)ACL_to_any_text, METH_VARARGS | METH_KEYWORDS,
      __to_any_text_doc__},
     {"check", ACL_check, METH_NOARGS, __check_doc__},
+    {"equiv_mode", ACL_equiv_mode, METH_NOARGS, __equiv_mode_doc__},
 #endif
 #ifdef HAVE_ACL_COPYEXT
     {"__getstate__", ACL_get_state, METH_NOARGS,
@@ -1548,9 +1568,11 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 1);
     PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 1);
     PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 1);
+    PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", 1);
 #else
     PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 0);
     PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 0);
     PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 0);
+    PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", 0);
 #endif
 }

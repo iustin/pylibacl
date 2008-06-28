@@ -133,6 +133,18 @@ class AclExtensions(aclTest, unittest.TestCase):
             self.failUnless(has_extended(item),
                         "An extended ACL should be reported as such")
 
+    @has_ext(HAS_EQUIV_MODE)
+    def testEquivMode(self):
+        """Test the equiv_mode function"""
+        if HAS_ACL_FROM_MODE:
+            for mode in 0644, 0755:
+                acl = posix1e.ACL(mode=mode)
+                self.failUnlessEqual(acl.equiv_mode(), mode)
+        acl = posix1e.ACL(text="u::rw,g::r,o::r")
+        self.failUnlessEqual(acl.equiv_mode(), 0644)
+        acl = posix1e.ACL(text="u::rx,g::-,o::-")
+        self.failUnlessEqual(acl.equiv_mode(), 0500)
+
 
 class WriteTests(aclTest, unittest.TestCase):
     """Write tests"""

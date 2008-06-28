@@ -2,7 +2,6 @@ include README
 include PLATFORMS
 include IMPLEMENTATION
 include acl.c
-include os_*.c
 include MANIFEST
 include posix1e.html
 include posix1e.txt

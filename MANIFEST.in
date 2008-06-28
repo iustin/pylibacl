@@ -1,6 +1,7 @@
 include COPYING
 include IMPLEMENTATION
 include MANIFEST
+include Makefile
 include NEWS
 include PLATFORMS
 include README

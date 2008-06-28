@@ -1,4 +1,4 @@
-.PHONY: doc log test
+.PHONY: doc test
 
 all: doc test
 

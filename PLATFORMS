@@ -1,23 +1,30 @@
-The current supported platforms:
+Current supported platforms
+===========================
 
 Linux 
+-----
 
-    It needs kernel 2.4 or higher and the libacl library installed (with
-    development headers, if installing from rpm). The url is
-    http://acl.bestbits.at if using for ext2/ext3 and JFS, and
-    http://oss.sgi.com/projects/xfs/ if using for XFS.
+It needs kernel 2.4 or higher and the libacl library installed (with
+development headers, if installing from rpm). This library is available
+on all modern distributions.
 
-    The level of compliance is level 2 (see IMPLEMENTATION).
+The level of compliance is level 2 (see IMPLEMENTATION), plus some extra
+functions; and as my development is done on Linux, I try to implement
+these extensions when it makes sense.
 
 
 FreeBSD
+-------
 
-    The current tested version is 4.6. I hope to be able to test 5.0 after
-    it's released.
+The current tested version is 7.0. FreeBSD supports all the standards
+functions, but 7.0-RELEASE seems to have some issues regarding the
+acl_valid() function when the qualifier of an ACL_USER or ACL_GROUP
+entry is the same as the current uid. By my interpretation, this should
+be a valid ACL, but FreeBSD declares the ACL invalid. As such, some
+unittests fail on FreeBSD.
 
-    The level of compliance is level 1. I hope that in FreeBSD 5 they will
-    improve.
 
+Other platforms
+---------------
 
-For any other platform, volunteers are welcome. To add support, look
-into setup.py at first and then into acl.c
+For any other platforms, volunteers are welcome - read the PORTING file.

@@ -1,3 +1,4 @@
+include COPYING
 include IMPLEMENTATION
 include MANIFEST
 include NEWS

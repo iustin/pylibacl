@@ -1,36 +1,49 @@
-The IEEE 1003.1e draft 17 ("POSIX.1e") describes a set of 28
-functions. These are grouped into three groups, based on their
-portability: 
-    - first group, the most portable one. All systems which claim to
-      support POSIX.1e should implement these: 
+Functionality level
+-------------------
+
+The IEEE 1003.1e draft 17 ("POSIX.1e") describes a set of 28 functions.
+These are grouped into three groups, based on their portability:
+
+- first group, the most portable one. All systems which claim to support
+  POSIX.1e should implement these:
+
      acl_delete_def_file(3), acl_dup(3), acl_free(3), acl_from_text(3),
      acl_get_fd(3), acl_get_file(3), acl_init(3), acl_set_fd(3),
      acl_set_file(3), acl_to_text(3), acl_valid(3)
 
-    - second group, containing the rest of the POSIX ACL functions. Systems
-      which claim to fully implement POSIX.1e should implement these:
-     acl_add_perm(3), acl_calc_mask(3), acl_clear_perms(3), acl_copy_entry(3),
-     acl_copy_ext(3), acl_copy_int(3), acl_create_entry(3),
-     acl_delete_entry(3), acl_delete_perm(3), acl_get_entry(3),
-     acl_get_permset(3), acl_get_qualifier(3), acl_get_tag_type(3),
-     acl_set_permset(3), acl_set_qualifier(3), acl_set_tag_type(3),
-     acl_size(3)
+- second group, containing the rest of the POSIX ACL functions. Systems
+  which claim to fully implement POSIX.1e should implement these:
 
-    - third group, containing extra functions implemented by each OS. These
-      are non-portable version. Both Linux and FreeBSD implement some extra 
-      function.
+     acl_add_perm(3), acl_calc_mask(3), acl_clear_perms(3),
+     acl_copy_entry(3), acl_copy_ext(3), acl_copy_int(3),
+     acl_create_entry(3), acl_delete_entry(3), acl_delete_perm(3),
+     acl_get_entry(3), acl_get_permset(3), acl_get_qualifier(3),
+     acl_get_tag_type(3), acl_set_permset(3), acl_set_qualifier(3),
+     acl_set_tag_type(3), acl_size(3)
+
+- third group, containing extra functions implemented by each OS. These
+  are non-portable version. Both Linux and FreeBSD implement some extra
+  functions.
 
 Thus we have the level of compliance. Depending on whether the system
-library support the second group, you get some extra methods for the
-ACL object.
+library support the second group, you get some extra methods for the ACL
+object.
+
+The implementation of the second group of function can be tested by
+checking the module-level constant HAS_ACL_ENTRY. The extra
+functionality available on Linux can be tested by additional HAS_*
+constants.
 
 Internal structure
-    The POSIX draft has the following stuff (correct me if I'm wrong):
-        - an ACL is denoted by acl_t
-        - an ACL contains many acl_entry_t, these are the individual entries
-          in the list; they always! belong to an acl_t
-        - each entry_t has a qualifier (think uid_t or gid_t), whose type is 
-          denoted by the acl_tag_t type, and an acl_permset_t
-        - the acl_permset_t can contain acl_perm_t value (ACL_READ, ACL_WRITE,
-          ACL_EXECUTE, ACL_ADD, ACL_DELETE, ...)
-        - function to manipulate all these, and functions to manipulate files
+------------------
+
+The POSIX draft has the following stuff (correct me if I'm wrong):
+
+- an ACL is denoted by acl_t
+- an ACL contains many acl_entry_t, these are the individual entries in
+  the list; they always(!) belong to an acl_t
+- each entry_t has a qualifier (think uid_t or gid_t), whose type is
+  denoted by the acl_tag_t type, and an acl_permset_t
+- the acl_permset_t can contain acl_perm_t value (ACL_READ, ACL_WRITE,
+  ACL_EXECUTE, ACL_ADD, ACL_DELETE, ...)
+- functions to manipulate all these, and functions to manipulate files

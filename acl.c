@@ -52,6 +52,8 @@
 #define PyBytes_FromString PyString_FromString
 #define PyBytes_FromFormat PyString_FromFormat
 #define PyBytes_ConcatAndDel PyString_ConcatAndDel
+
+#define Py_TYPE(o)    (((PyObject*)(o))->ob_type)
 #endif
 
 static PyTypeObject ACL_Type;
@@ -1151,8 +1153,12 @@ static PyMethodDef ACL_methods[] = {
 
 /* The definition of the ACL Type */
 static PyTypeObject ACL_Type = {
+#ifdef IS_PY3K
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,
+#endif
     "posix1e.ACL",
     sizeof(ACL_Object),
     0,
@@ -1268,8 +1274,12 @@ static char __Entry_Type_doc__[] =
     ;
 /* The definition of the Entry Type */
 static PyTypeObject Entry_Type = {
+#ifdef IS_PY3K
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,
+#endif
     "posix1e.Entry",
     sizeof(Entry_Object),
     0,
@@ -1373,8 +1383,12 @@ static char __Permset_Type_doc__[] =
 
 /* The definition of the Permset Type */
 static PyTypeObject Permset_Type = {
+#ifdef IS_PY3K
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,
+#endif
     "posix1e.Permset",
     sizeof(Permset_Object),
     0,
@@ -1542,33 +1556,59 @@ static char __posix1e_doc__[] =
     "\n"
     ;
 
-void initposix1e(void) {
+#ifdef IS_PY3K
+
+static struct PyModuleDef posix1emodule = {
+    PyModuleDef_HEAD_INIT,
+    "posix1e",
+    __posix1e_doc__,
+    0,
+    aclmodule_methods,
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_posix1e(void)
+
+#else
+#define INITERROR return
+
+void initposix1e(void)
+#endif
+{
     PyObject *m, *d;
 
-    ACL_Type.ob_type = &PyType_Type;
+    Py_TYPE(&ACL_Type) = &PyType_Type;
     if(PyType_Ready(&ACL_Type) < 0)
-        return;
+        INITERROR;
 
 #ifdef HAVE_LEVEL2
-    Entry_Type.ob_type = &PyType_Type;
+    Py_TYPE(&Entry_Type) = &PyType_Type;
     if(PyType_Ready(&Entry_Type) < 0)
-        return;
+        INITERROR;
 
-    Permset_Type.ob_type = &PyType_Type;
+    Py_TYPE(&Permset_Type) = &PyType_Type;
     if(PyType_Ready(&Permset_Type) < 0)
-        return;
+        INITERROR;
 #endif
 
+#ifdef IS_PY3K
+    m = PyModule_Create(&posix1emodule);
+#else
     m = Py_InitModule3("posix1e", aclmodule_methods, __posix1e_doc__);
+#endif
+    if (m==NULL)
+        INITERROR;
 
     d = PyModule_GetDict(m);
     if (d == NULL)
-        return;
+        INITERROR;
 
     Py_INCREF(&ACL_Type);
     if (PyDict_SetItemString(d, "ACL",
                              (PyObject *) &ACL_Type) < 0)
-        return;
+        INITERROR;
 
     /* 23.3.6 acl_type_t values */
     PyModule_AddIntConstant(m, "ACL_TYPE_ACCESS", ACL_TYPE_ACCESS);
@@ -1579,12 +1619,12 @@ void initposix1e(void) {
     Py_INCREF(&Entry_Type);
     if (PyDict_SetItemString(d, "Entry",
                              (PyObject *) &Entry_Type) < 0)
-        return;
+        INITERROR;
 
     Py_INCREF(&Permset_Type);
     if (PyDict_SetItemString(d, "Permset",
                              (PyObject *) &Permset_Type) < 0)
-        return;
+        INITERROR;
 
     /* 23.2.2 acl_perm_t values */
     PyModule_AddIntConstant(m, "ACL_READ", ACL_READ);
@@ -1630,5 +1670,9 @@ void initposix1e(void) {
     PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 0);
     PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 0);
     PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", 0);
+#endif
+
+#ifdef IS_PY3K
+    return m;
 #endif
 }

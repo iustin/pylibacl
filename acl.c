@@ -32,7 +32,18 @@
 #define get_perm acl_get_perm_np
 #endif
 
-staticforward PyTypeObject ACL_Type;
+#if PY_MAJOR_VERSION >= 3
+#define IS_PY3K
+#else
+#define PyBytes_Check PyString_Check
+#define PyBytes_AS_STRING PyString_AS_STRING
+#define PyBytes_FromStringAndSize PyString_FromStringAndSize
+#define PyBytes_FromString PyString_FromString
+#define PyBytes_FromFormat PyString_FromFormat
+#define PyBytes_ConcatAndDel PyString_ConcatAndDel
+#endif
+
+static PyTypeObject ACL_Type;
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args);
 static PyObject* ACL_valid(PyObject* obj, PyObject* args);
 
@@ -42,8 +53,8 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
 #endif
 
 #ifdef HAVE_LEVEL2
-staticforward PyTypeObject Entry_Type;
-staticforward PyTypeObject Permset_Type;
+static PyTypeObject Entry_Type;
+static PyTypeObject Permset_Type;
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
                              PyObject *keywds);
 #endif
@@ -181,7 +192,7 @@ static PyObject* ACL_str(PyObject *obj) {
     if(text == NULL) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
-    ret = PyString_FromString(text);
+    ret = PyBytes_FromString(text);
     if(acl_free(text) != 0) {
         Py_DECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -235,7 +246,7 @@ static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
     if(text == NULL) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
-    ret = PyString_FromString(text);
+    ret = PyBytes_FromString(text);
     if(acl_free(text) != 0) {
         Py_DECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -361,8 +372,8 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     if (!PyArg_ParseTuple(args, "O|i", &myarg, &type))
         return NULL;
 
-    if(PyString_Check(myarg)) {
-        char *filename = PyString_AS_STRING(myarg);
+    if(PyBytes_Check(myarg)) {
+        char *filename = PyBytes_AS_STRING(myarg);
         nret = acl_set_file(filename, type, self->acl);
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
         nret = acl_set_fd(fd, self->acl);
@@ -429,9 +440,9 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
     if(size == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    if((ret = PyString_FromStringAndSize(NULL, size)) == NULL)
+    if((ret = PyBytes_FromStringAndSize(NULL, size)) == NULL)
         return NULL;
-    buf = PyString_AsString(ret);
+    buf = PyBytes_AsString(ret);
 
     if((nsize = acl_copy_ext(buf, self->acl, size)) == -1) {
         Py_DECREF(ret);
@@ -666,8 +677,7 @@ static PyObject* Entry_str(PyObject *obj) {
     acl_tag_t tag;
     uid_t qualifier;
     void *p;
-    PyObject *ret;
-    PyObject *format, *list;
+    PyObject *format, *kind;
     Entry_Object *self = (Entry_Object*) obj;
 
     if(acl_get_tag_type(self->entry, &tag) == -1) {
@@ -685,33 +695,31 @@ static PyObject* Entry_str(PyObject *obj) {
         qualifier = 0;
     }
 
-    format = PyString_FromString("ACL entry for %s");
+    format = PyBytes_FromString("ACL entry for ");
     if(format == NULL)
         return NULL;
-    list = PyTuple_New(1);
     if(tag == ACL_UNDEFINED_TAG) {
-        PyTuple_SetItem(list, 0, PyString_FromString("undefined type"));
+        kind = PyBytes_FromString("undefined type");
     } else if(tag == ACL_USER_OBJ) {
-        PyTuple_SetItem(list, 0, PyString_FromString("the owner"));
+        kind = PyBytes_FromString("the owner");
     } else if(tag == ACL_GROUP_OBJ) {
-        PyTuple_SetItem(list, 0, PyString_FromString("the group"));
+        kind = PyBytes_FromString("the group");
     } else if(tag == ACL_OTHER) {
-        PyTuple_SetItem(list, 0, PyString_FromString("the others"));
+        kind = PyBytes_FromString("the others");
     } else if(tag == ACL_USER) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("user with uid %d",
-                                                     qualifier));
+        kind = PyBytes_FromFormat("user with uid %d", qualifier);
     } else if(tag == ACL_GROUP) {
-        PyTuple_SetItem(list, 0, PyString_FromFormat("group with gid %d",
-                                                     qualifier));
+        kind = PyBytes_FromFormat("group with gid %d", qualifier);
     } else if(tag == ACL_MASK) {
-        PyTuple_SetItem(list, 0, PyString_FromString("the mask"));
+        kind = PyBytes_FromString("the mask");
     } else {
-        PyTuple_SetItem(list, 0, PyString_FromString("UNKNOWN_TAG_TYPE!"));
+        kind = PyBytes_FromString("UNKNOWN_TAG_TYPE!");
     }
-    ret = PyString_Format(format, list);
+    if (kind == NULL)
+        return NULL;
+    PyBytes_ConcatAndDel(&format, kind);
     Py_DECREF(format);
-    Py_DECREF(list);
-    return ret;
+    return format;
 }
 
 /* Sets the tag type of the entry */
@@ -934,7 +942,7 @@ static PyObject* Permset_str(PyObject *obj) {
     pstr[0] = get_perm(self->permset, ACL_READ) ? 'r' : '-';
     pstr[1] = get_perm(self->permset, ACL_WRITE) ? 'w' : '-';
     pstr[2] = get_perm(self->permset, ACL_EXECUTE) ? 'x' : '-';
-    return PyString_FromStringAndSize(pstr, 3);
+    return PyBytes_FromStringAndSize(pstr, 3);
 }
 
 static char __Permset_clear_doc__[] =
@@ -1445,8 +1453,8 @@ static PyObject* aclmodule_has_extended(PyObject* obj, PyObject* args) {
     if (!PyArg_ParseTuple(args, "O", &myarg))
         return NULL;
 
-    if(PyString_Check(myarg)) {
-        const char *filename = PyString_AS_STRING(myarg);
+    if(PyBytes_Check(myarg)) {
+        const char *filename = PyBytes_AS_STRING(myarg);
         nret = acl_extended_file(filename);
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
         nret = acl_extended_fd(fd);

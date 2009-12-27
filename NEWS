@@ -1,3 +1,8 @@
+Version 0.5
+===========
+
+Added support for Python 3.x and improved support for Unicode filenames.
+
 Version 0.4
 ===========
 

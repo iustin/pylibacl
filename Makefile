@@ -14,5 +14,8 @@ doc: posix1e.so
 		posix1e
 
 test:
-	python2.4 ./setup.py test
-	python2.5 ./setup.py test
+	for ver in 2.4 2.5 2.6; do \
+	  if type python$$ver >/dev/null; then \
+	    python$$ver ./setup.py test; \
+          fi; \
+	done

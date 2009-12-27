@@ -1,7 +1,7 @@
 /*
     posix1e - a python module exposing the posix acl functions
 
-    Copyright (C) 2002-2008 Iustin Pop <iusty@k1024.org>
+    Copyright (C) 2002-2009 Iustin Pop <iusty@k1024.org>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public

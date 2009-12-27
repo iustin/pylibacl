@@ -53,7 +53,10 @@
 #define PyBytes_FromFormat PyString_FromFormat
 #define PyBytes_ConcatAndDel PyString_ConcatAndDel
 
+/* Python 2.6 already defines Py_TYPE */
+#ifndef Py_TYPE
 #define Py_TYPE(o)    (((PyObject*)(o))->ob_type)
+#endif
 #endif
 
 static PyTypeObject ACL_Type;

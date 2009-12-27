@@ -123,11 +123,11 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
                               "mode", NULL };
-    char *format = "|sisO!sH";
+    char *format = "|etisO!sH";
     mode_t mode = 0;
 #else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
-    char *format = "|sisO!s";
+    char *format = "|etisO!s";
 #endif
     char *file = NULL;
     char *filedef = NULL;
@@ -142,7 +142,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         return -1;
     }
     if(!PyArg_ParseTupleAndKeywords(args, keywds, format, kwlist,
-                                    &file, &fd, &text, &ACL_Type,
+                                    NULL, &file, &fd, &text, &ACL_Type,
                                     &thesrc, &filedef
 #ifdef HAVE_LINUX
                                     , &mode
@@ -388,6 +388,15 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     if(PyBytes_Check(myarg)) {
         char *filename = PyBytes_AS_STRING(myarg);
         nret = acl_set_file(filename, type, self->acl);
+    } else if (PyUnicode_Check(myarg)) {
+        PyObject *o =
+            PyUnicode_AsEncodedString(myarg,
+                                      Py_FileSystemDefaultEncoding, "strict");
+        if (o == NULL)
+            return NULL;
+        const char *filename = PyBytes_AS_STRING(o);
+        nret = acl_set_file(filename, type, self->acl);
+        Py_DECREF(o);
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
         nret = acl_set_fd(fd, self->acl);
     } else {
@@ -1448,7 +1457,7 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
     char *filename;
 
     /* Parse the arguments */
-    if (!PyArg_ParseTuple(args, "s", &filename))
+    if (!PyArg_ParseTuple(args, "et", NULL, &filename))
         return NULL;
 
     if(acl_delete_def_file(filename) == -1) {
@@ -1481,6 +1490,15 @@ static PyObject* aclmodule_has_extended(PyObject* obj, PyObject* args) {
     if(PyBytes_Check(myarg)) {
         const char *filename = PyBytes_AS_STRING(myarg);
         nret = acl_extended_file(filename);
+    } else if (PyUnicode_Check(myarg)) {
+        PyObject *o =
+            PyUnicode_AsEncodedString(myarg,
+                                      Py_FileSystemDefaultEncoding, "strict");
+        if (o == NULL)
+            return NULL;
+        const char *filename = PyBytes_AS_STRING(o);
+        nret = acl_extended_file(filename);
+        Py_DECREF(o);
     } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
         nret = acl_extended_fd(fd);
     } else {

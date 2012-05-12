@@ -1,7 +1,7 @@
 /*
     posix1e - a python module exposing the posix acl functions
 
-    Copyright (C) 2002-2009 Iustin Pop <iusty@k1024.org>
+    Copyright (C) 2002-2009, 2012 Iustin Pop <iusty@k1024.org>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -210,7 +210,7 @@ static PyObject* ACL_str(PyObject *obj) {
     }
     ret = PyBytes_FromString(text);
     if(acl_free(text) != 0) {
-        Py_DECREF(ret);
+        Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
     return ret;
@@ -264,7 +264,7 @@ static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
     }
     ret = PyBytes_FromString(text);
     if(acl_free(text) != 0) {
-        Py_DECREF(ret);
+        Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
     return ret;
@@ -303,7 +303,7 @@ static PyObject* ACL_check(PyObject* obj, PyObject* args) {
         Py_INCREF(Py_False);
         return Py_False;
     }
-    return PyTuple_Pack(2, PyInt_FromLong(result), PyInt_FromLong(eindex));
+    return Py_BuildValue("(ii)", result, eindex);
 }
 
 /* Implementation of the rich compare for ACLs */
@@ -621,8 +621,10 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
         return NULL;
     }
 
-    if (!PyArg_ParseTuple(args, "|O!", &Entry_Type, &oldentry))
+    if (!PyArg_ParseTuple(args, "|O!", &Entry_Type, &oldentry)) {
+        Py_DECREF(newentry);
         return NULL;
+    }
 
     nret = acl_create_entry(&self->acl, &newentry->entry);
     if(nret == -1) {
@@ -740,10 +742,11 @@ static PyObject* Entry_str(PyObject *obj) {
     } else {
         kind = PyBytes_FromString("UNKNOWN_TAG_TYPE!");
     }
-    if (kind == NULL)
+    if (kind == NULL) {
+        Py_DECREF(format);
         return NULL;
+    }
     PyBytes_ConcatAndDel(&format, kind);
-    Py_DECREF(format);
     return format;
 }
 
@@ -857,6 +860,7 @@ static PyObject* Entry_get_permset(PyObject *obj, void* arg) {
     ps = (Permset_Object*)p;
     if(acl_get_permset(self->entry, &ps->permset) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
+        Py_DECREF(p);
         return NULL;
     }
     ps->parent_entry = obj;

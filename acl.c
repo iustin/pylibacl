@@ -300,8 +300,7 @@ static PyObject* ACL_check(PyObject* obj, PyObject* args) {
     if((result = acl_check(self->acl, &eindex)) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
     if(result == 0) {
-        Py_INCREF(Py_False);
-        return Py_False;
+        Py_RETURN_FALSE;
     }
     return Py_BuildValue("(ii)", result, eindex);
 }
@@ -446,11 +445,9 @@ static PyObject* ACL_valid(PyObject* obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
 
     if(acl_valid(self->acl) == -1) {
-        Py_INCREF(Py_False);
-        return Py_False;
+        Py_RETURN_FALSE;
     } else {
-        Py_INCREF(Py_True);
-        return Py_True;
+        Py_RETURN_TRUE;
     }
 }
 
@@ -1003,11 +1000,9 @@ static PyObject* Permset_get_right(PyObject *obj, void* arg) {
     Permset_Object *self = (Permset_Object*) obj;
 
     if(get_perm(self->permset, *(acl_perm_t*)arg)) {
-        Py_INCREF(Py_True);
-        return Py_True;
+        Py_RETURN_TRUE;
     } else {
-        Py_INCREF(Py_False);
-        return Py_False;
+        Py_RETURN_FALSE;
     }
 }
 
@@ -1118,11 +1113,9 @@ static PyObject* Permset_test(PyObject* obj, PyObject* args) {
         return PyErr_SetFromErrno(PyExc_IOError);
 
     if(ret) {
-        Py_INCREF(Py_True);
-        return Py_True;
+        Py_RETURN_TRUE;
     } else {
-        Py_INCREF(Py_False);
-        return Py_False;
+        Py_RETURN_FALSE;
     }
 }
 

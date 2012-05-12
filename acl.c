@@ -725,22 +725,31 @@ static PyObject* Entry_str(PyObject *obj) {
     format = PyBytes_FromString("ACL entry for ");
     if(format == NULL)
         return NULL;
-    if(tag == ACL_UNDEFINED_TAG) {
+    switch(tag) {
+    case ACL_UNDEFINED_TAG:
         kind = PyBytes_FromString("undefined type");
-    } else if(tag == ACL_USER_OBJ) {
+        break;
+    case ACL_USER_OBJ:
         kind = PyBytes_FromString("the owner");
-    } else if(tag == ACL_GROUP_OBJ) {
+        break;
+    case ACL_GROUP_OBJ:
         kind = PyBytes_FromString("the group");
-    } else if(tag == ACL_OTHER) {
+        break;
+    case ACL_OTHER:
         kind = PyBytes_FromString("the others");
-    } else if(tag == ACL_USER) {
+        break;
+    case ACL_USER:
         kind = PyBytes_FromFormat("user with uid %d", qualifier);
-    } else if(tag == ACL_GROUP) {
+        break;
+    case ACL_GROUP:
         kind = PyBytes_FromFormat("group with gid %d", qualifier);
-    } else if(tag == ACL_MASK) {
+        break;
+    case ACL_MASK:
         kind = PyBytes_FromString("the mask");
-    } else {
+        break;
+    default:
         kind = PyBytes_FromString("UNKNOWN_TAG_TYPE!");
+        break;
     }
     if (kind == NULL) {
         Py_DECREF(format);

@@ -3,7 +3,7 @@
 
 """Unittests for the posix1e module"""
 
-#  Copyright (C) 2002-2009 Iustin Pop <iusty@k1024.org>
+#  Copyright (C) 2002-2009, 2012 Iustin Pop <iusty@k1024.org>
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 import unittest
 import os
 import tempfile
+import sys
 
 import posix1e
 from posix1e import *
@@ -201,6 +202,14 @@ class ModificationTests(aclTest, unittest.TestCase):
         e = acl.append()
         e.tag_type = posix1e.ACL_OTHER
         acl.calc_mask()
+        str_format = str(e)
+        ref_cnt = sys.getrefcount(str_format)
+        # FIXME: hardcoded value for the max ref count... but I've
+        # seen it overflow on bad reference counting, so it's better
+        # to be safe
+        if ref_cnt < 2 or ref_cnt > 1024:
+           self.fail("Wrong reference count, expected 2-1024 and got %d" %
+                     ref_cnt)
 
     @has_ext(HAS_ACL_ENTRY)
     def testDelete(self):

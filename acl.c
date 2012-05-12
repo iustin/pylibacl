@@ -249,7 +249,7 @@ static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
     char *text;
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *ret;
-    char *arg_prefix = NULL;
+    const char *arg_prefix = NULL;
     char arg_separator = '\n';
     int arg_options = 0;
     static char *kwlist[] = {"prefix", "separator", "options", NULL};
@@ -385,7 +385,7 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     int nret;
     int fd;
 
-    if (!PyArg_ParseTuple(args, "O|i", &myarg, &type))
+    if (!PyArg_ParseTuple(args, "O|I", &myarg, &type))
         return NULL;
 
     if(PyBytes_Check(myarg)) {

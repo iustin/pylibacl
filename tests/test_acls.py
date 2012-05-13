@@ -195,6 +195,22 @@ class WriteTests(aclTest, unittest.TestCase):
 class ModificationTests(aclTest, unittest.TestCase):
     """ACL modification tests"""
 
+    def checkRef(self, obj):
+        """Checks if a given obj has a 'sane' refcount"""
+        ref_cnt = sys.getrefcount(obj)
+        # FIXME: hardcoded value for the max ref count... but I've
+        # seen it overflow on bad reference counting, so it's better
+        # to be safe
+        if ref_cnt < 2 or ref_cnt > 1024:
+           self.fail("Wrong reference count, expected 2-1024 and got %d" %
+                     ref_cnt)
+
+    def testStr(self):
+        """Test str() of an ACL."""
+        acl = posix1e.ACL()
+        str_acl = str(acl)
+        self.checkRef(str_acl)
+
     @has_ext(HAS_ACL_ENTRY)
     def testAppend(self):
         """Test append a new Entry to the ACL"""
@@ -203,13 +219,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         e.tag_type = posix1e.ACL_OTHER
         acl.calc_mask()
         str_format = str(e)
-        ref_cnt = sys.getrefcount(str_format)
-        # FIXME: hardcoded value for the max ref count... but I've
-        # seen it overflow on bad reference counting, so it's better
-        # to be safe
-        if ref_cnt < 2 or ref_cnt > 1024:
-           self.fail("Wrong reference count, expected 2-1024 and got %d" %
-                     ref_cnt)
+        self.checkRef(str_format)
 
     @has_ext(HAS_ACL_ENTRY)
     def testDelete(self):
@@ -284,17 +294,23 @@ class ModificationTests(aclTest, unittest.TestCase):
         e = acl.append()
         ps = e.permset
         ps.clear()
+        str_ps = str(ps)
+        self.checkRef(str_ps)
         pmap = {
             posix1e.ACL_READ: "read",
             posix1e.ACL_WRITE: "write",
             posix1e.ACL_EXECUTE: "execute",
             }
         for perm in pmap:
+            str_ps = str(ps)
+            self.checkRef(str_ps)
             self.assertFalse(ps.test(perm), "Empty permission set should not"
                         " have permission '%s'" % pmap[perm])
             ps.add(perm)
             self.assertTrue(ps.test(perm), "Permission '%s' should exist"
                         " after addition" % pmap[perm])
+            str_ps = str(ps)
+            self.checkRef(str_ps)
             ps.delete(perm)
             self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
                         " after deletion" % pmap[perm])

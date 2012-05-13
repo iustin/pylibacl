@@ -6,14 +6,18 @@ DOCTREES      = $(DOCDIR)/doctrees
 ALLSPHINXOPTS = -d $(DOCTREES) $(SPHINXOPTS) $(DOCDIR)
 
 MODNAME = posix1e.so
+RSTFILES = doc/index.rst doc/module.rst NEWS doc/conf.py
 
 all: doc test
 
 $(MODNAME): acl.c
 	./setup.py build_ext --inplace
 
-doc: $(MODNAME)
+$(DOCHTML)/index.html: $(MODNAME) $(RSTFILES)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(DOCHTML)
+	touch $@
+
+doc: $(DOCHTML)/index.html
 
 test:
 	for ver in 2.4 2.5 2.6 3.0 3.1; do \

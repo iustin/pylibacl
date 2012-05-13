@@ -96,14 +96,14 @@ class LoadTests(aclTest, unittest.TestCase):
         """Test loading ACLs from a file"""
         _, fname = self._getfile()
         acl1 = posix1e.ACL(file=fname)
-        self.failUnless(acl1.valid(), "ACL read from file should be valid")
+        self.assertTrue(acl1.valid(), "ACL read from file should be valid")
 
     def testFromDir(self):
         """Test loading ACLs from a directory"""
         dname = self._getdir()
         acl1 = posix1e.ACL(file=dname)
         acl2 = posix1e.ACL(filedef=dname)
-        self.failUnless(acl1.valid(),
+        self.assertTrue(acl1.valid(),
                         "ACL read from directory should be valid")
         # default ACLs might or might not be valid; missing ones are
         # not valid, so we don't test acl2 for validity
@@ -112,17 +112,17 @@ class LoadTests(aclTest, unittest.TestCase):
         """Test loading ACLs from a file descriptor"""
         fd, _ = self._getfile()
         acl1 = posix1e.ACL(fd=fd)
-        self.failUnless(acl1.valid(), "ACL read from fd should be valid")
+        self.assertTrue(acl1.valid(), "ACL read from fd should be valid")
 
     def testFromEmpty(self):
         """Test creating an empty ACL"""
         acl1 = posix1e.ACL()
-        self.failIf(acl1.valid(), "Empty ACL should not be valid")
+        self.assertFalse(acl1.valid(), "Empty ACL should not be valid")
 
     def testFromText(self):
         """Test creating an ACL from text"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.failUnless(acl1.valid(),
+        self.assertTrue(acl1.valid(),
                         "ACL based on standard description should be valid")
 
 class AclExtensions(aclTest, unittest.TestCase):
@@ -132,16 +132,16 @@ class AclExtensions(aclTest, unittest.TestCase):
     def testFromMode(self):
         """Test loading ACLs from an octal mode"""
         acl1 = posix1e.ACL(mode=M0644)
-        self.failUnless(acl1.valid(),
+        self.assertTrue(acl1.valid(),
                         "ACL created via octal mode shoule be valid")
 
     @has_ext(HAS_ACL_CHECK)
     def testAclCheck(self):
         """Test the acl_check method"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.failIf(acl1.check(), "ACL is not valid")
+        self.assertFalse(acl1.check(), "ACL is not valid")
         acl2 = posix1e.ACL()
-        self.failUnless(acl2.check(), "Empty ACL should not be valid")
+        self.assertTrue(acl2.check(), "Empty ACL should not be valid")
 
     @has_ext(HAS_EXTENDED_CHECK)
     def testExtended(self):
@@ -150,14 +150,14 @@ class AclExtensions(aclTest, unittest.TestCase):
         basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         basic_acl.applyto(fd)
         for item in fd, fname:
-            self.failIf(has_extended(item),
+            self.assertFalse(has_extended(item),
                         "A simple ACL should not be reported as extended")
         enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
-        self.failUnless(enhanced_acl.valid(),
+        self.assertTrue(enhanced_acl.valid(),
                         "Failure to build an extended ACL")
         enhanced_acl.applyto(fd)
         for item in fd, fname:
-            self.failUnless(has_extended(item),
+            self.assertTrue(has_extended(item),
                         "An extended ACL should be reported as such")
 
     @has_ext(HAS_EQUIV_MODE)
@@ -166,11 +166,11 @@ class AclExtensions(aclTest, unittest.TestCase):
         if HAS_ACL_FROM_MODE:
             for mode in M0644, M0755:
                 acl = posix1e.ACL(mode=mode)
-                self.failUnlessEqual(acl.equiv_mode(), mode)
+                self.assertEqual(acl.equiv_mode(), mode)
         acl = posix1e.ACL(text="u::rw,g::r,o::r")
-        self.failUnlessEqual(acl.equiv_mode(), M0644)
+        self.assertEqual(acl.equiv_mode(), M0644)
         acl = posix1e.ACL(text="u::rx,g::-,o::-")
-        self.failUnlessEqual(acl.equiv_mode(), M0500)
+        self.assertEqual(acl.equiv_mode(), M0500)
 
 
 class WriteTests(aclTest, unittest.TestCase):
@@ -225,13 +225,13 @@ class ModificationTests(aclTest, unittest.TestCase):
     def testDoubleEntries(self):
         """Test double entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.failUnless(acl.valid(), "ACL is not valid")
+        self.assertTrue(acl.valid(), "ACL is not valid")
         for tag_type in (posix1e.ACL_USER_OBJ, posix1e.ACL_GROUP_OBJ,
                          posix1e.ACL_OTHER):
             e = acl.append()
             e.tag_type = tag_type
             e.permset.clear()
-            self.failIf(acl.valid(),
+            self.assertFalse(acl.valid(),
                         "ACL containing duplicate entries should not be valid")
             acl.delete_entry(e)
 
@@ -239,7 +239,7 @@ class ModificationTests(aclTest, unittest.TestCase):
     def testMultipleGoodEntries(self):
         """Test multiple valid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.failUnless(acl.valid(), "ACL is not valid")
+        self.assertTrue(acl.valid(), "ACL is not valid")
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
             for obj_id in range(5):
@@ -248,7 +248,7 @@ class ModificationTests(aclTest, unittest.TestCase):
                 e.qualifier = obj_id
                 e.permset.clear()
                 acl.calc_mask()
-                self.failUnless(acl.valid(),
+                self.assertTrue(acl.valid(),
                                "ACL should be able to hold multiple"
                                 " user/group entries")
 
@@ -256,7 +256,7 @@ class ModificationTests(aclTest, unittest.TestCase):
     def testMultipleBadEntries(self):
         """Test multiple invalid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.failUnless(acl.valid(), "ACL built from standard description"
+        self.assertTrue(acl.valid(), "ACL built from standard description"
                         " should be valid")
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
@@ -265,14 +265,14 @@ class ModificationTests(aclTest, unittest.TestCase):
             e1.qualifier = 0
             e1.permset.clear()
             acl.calc_mask()
-            self.failUnless(acl.valid(), "ACL should be able to add a"
+            self.assertTrue(acl.valid(), "ACL should be able to add a"
                             " user/group entry")
             e2 = acl.append()
             e2.tag_type = tag_type
             e2.qualifier = 0
             e2.permset.clear()
             acl.calc_mask()
-            self.failIf(acl.valid(), "ACL should not validate when"
+            self.assertFalse(acl.valid(), "ACL should not validate when"
                         " containing two duplicate entries")
             acl.delete_entry(e1)
             acl.delete_entry(e2)
@@ -290,13 +290,13 @@ class ModificationTests(aclTest, unittest.TestCase):
             posix1e.ACL_EXECUTE: "execute",
             }
         for perm in pmap:
-            self.failIf(ps.test(perm), "Empty permission set should not"
+            self.assertFalse(ps.test(perm), "Empty permission set should not"
                         " have permission '%s'" % pmap[perm])
             ps.add(perm)
-            self.failUnless(ps.test(perm), "Permission '%s' should exist"
+            self.assertTrue(ps.test(perm), "Permission '%s' should exist"
                         " after addition" % pmap[perm])
             ps.delete(perm)
-            self.failIf(ps.test(perm), "Permission '%s' should not exist"
+            self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
                         " after deletion" % pmap[perm])
 
 

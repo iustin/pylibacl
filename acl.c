@@ -45,6 +45,10 @@
 #define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
 #define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
 #define PyInt_AS_LONG PyLong_AS_LONG
+#define MyString_ConcatAndDel PyUnicode_AppendAndDel
+#define MyString_FromFormat PyUnicode_FromFormat
+#define MyString_FromString PyUnicode_FromString
+#define MyString_FromStringAndSize PyUnicode_FromStringAndSize
 #else
 #define PyBytes_Check PyString_Check
 #define PyBytes_AS_STRING PyString_AS_STRING
@@ -52,6 +56,10 @@
 #define PyBytes_FromString PyString_FromString
 #define PyBytes_FromFormat PyString_FromFormat
 #define PyBytes_ConcatAndDel PyString_ConcatAndDel
+#define MyString_ConcatAndDel PyBytes_ConcatAndDel
+#define MyString_FromFormat PyBytes_FromFormat
+#define MyString_FromString PyBytes_FromString
+#define MyString_FromStringAndSize PyBytes_FromStringAndSize
 
 /* Python 2.6 already defines Py_TYPE */
 #ifndef Py_TYPE
@@ -208,7 +216,7 @@ static PyObject* ACL_str(PyObject *obj) {
     if(text == NULL) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
-    ret = PyBytes_FromString(text);
+    ret = MyString_FromString(text);
     if(acl_free(text) != 0) {
         Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -738,40 +746,40 @@ static PyObject* Entry_str(PyObject *obj) {
         qualifier = 0;
     }
 
-    format = PyBytes_FromString("ACL entry for ");
+    format = MyString_FromString("ACL entry for ");
     if(format == NULL)
         return NULL;
     switch(tag) {
     case ACL_UNDEFINED_TAG:
-        kind = PyBytes_FromString("undefined type");
+        kind = MyString_FromString("undefined type");
         break;
     case ACL_USER_OBJ:
-        kind = PyBytes_FromString("the owner");
+        kind = MyString_FromString("the owner");
         break;
     case ACL_GROUP_OBJ:
-        kind = PyBytes_FromString("the group");
+        kind = MyString_FromString("the group");
         break;
     case ACL_OTHER:
-        kind = PyBytes_FromString("the others");
+        kind = MyString_FromString("the others");
         break;
     case ACL_USER:
-        kind = PyBytes_FromFormat("user with uid %d", qualifier);
+        kind = MyString_FromFormat("user with uid %d", qualifier);
         break;
     case ACL_GROUP:
-        kind = PyBytes_FromFormat("group with gid %d", qualifier);
+        kind = MyString_FromFormat("group with gid %d", qualifier);
         break;
     case ACL_MASK:
-        kind = PyBytes_FromString("the mask");
+        kind = MyString_FromString("the mask");
         break;
     default:
-        kind = PyBytes_FromString("UNKNOWN_TAG_TYPE!");
+        kind = MyString_FromString("UNKNOWN_TAG_TYPE!");
         break;
     }
     if (kind == NULL) {
         Py_DECREF(format);
         return NULL;
     }
-    PyBytes_ConcatAndDel(&format, kind);
+    MyString_ConcatAndDel(&format, kind);
     return format;
 }
 
@@ -997,7 +1005,7 @@ static PyObject* Permset_str(PyObject *obj) {
     pstr[0] = get_perm(self->permset, ACL_READ) ? 'r' : '-';
     pstr[1] = get_perm(self->permset, ACL_WRITE) ? 'w' : '-';
     pstr[2] = get_perm(self->permset, ACL_EXECUTE) ? 'x' : '-';
-    return PyBytes_FromStringAndSize(pstr, 3);
+    return MyString_FromStringAndSize(pstr, 3);
 }
 
 static char __Permset_clear_doc__[] =

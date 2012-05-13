@@ -1,6 +1,22 @@
 News
 ====
 
+Version 0.5.1
+-------------
+
+A bug-fix only release. Critical bugs (memory leaks and possible
+segmentation faults) have been fixed thanks to Dave Malcolm and his
+``cpychecker`` tool. Additionally, some compatibility issues with Python
+3.x have been fixed (str() methods returning bytes).
+
+The documentation has been improved and changed from epydoc to sphinx;
+note however that the documentation is still auto-generated from the
+docstrings.
+
+Project reorganisation: the project home page has been moved from
+SourceForge to GitHub.
+
+
 Version 0.5
 -----------
 

@@ -224,23 +224,23 @@ static char __to_any_text_doc__[] =
   "customized text format to be generated for the ACL. See\n"
   "acl_to_any_text(3) for more details.\n"
   "\n"
-  "Parameters:\n"
-  "  - prefix: if given, this string will be prepended to all lines\n"
-  "  - separator: a single character (defaults to '\\n'); this will be\n"
-  "               user to separate the entries in the ACL\n"
-  "  - options: a bitwise combination of:\n"
-  "    -  TEXT_ABBREVIATE: use 'u' instead of 'user', 'g' instead of \n"
-  "                       'group', etc.\n"
-  "    -  TEXT_NUMERIC_IDS: User and group IDs are included as decimal\n"
-  "                         numbers instead of names\n"
-  "    -  TEXT_SOME_EFFECTIVE: Include comments denoting the effective\n"
-  "                            permissions when some are masked\n"
-  "    -  TEXT_ALL_EFFECTIVE: Include comments after all ACL entries\n"
-  "                           affected by an ACL_MASK entry\n"
-  "    -  TEXT_SMART_INDENT: Used in combination with the _EFFECTIVE\n"
-  "                          options, this will ensure that comments \n"
-  "                          are alligned to the fourth tab position\n"
-  "                          (assuming one tab equals eight spaces)\n"
+  "Parameters:\n\n"
+  "- prefix: if given, this string will be prepended to all lines\n"
+  "- separator: a single character (defaults to '\\n'); this will be\n"
+  "  used to separate the entries in the ACL\n"
+  "- options: a bitwise combination of:\n"
+  "\n\n"
+  "    - ``TEXT_ABBREVIATE``: use 'u' instead of 'user', 'g' instead of\n"
+  "      'group', etc.\n"
+  "    - ``TEXT_NUMERIC_IDS``: User and group IDs are included as decimal\n"
+  "      numbers instead of names\n"
+  "    - ``TEXT_SOME_EFFECTIVE``: Include comments denoting the effective\n"
+  "      permissions when some are masked\n"
+  "    - ``TEXT_ALL_EFFECTIVE``: Include comments after all ACL entries\n"
+  "      affected by an ACL_MASK entry\n"
+  "    - ``TEXT_SMART_INDENT``: Used in combination with the _EFFECTIVE\n"
+  "      options, this will ensure that comments are aligned to the\n"
+  "      fourth tab position (assuming one tab equals eight spaces)\n"
   ;
 
 /* Converts the acl to a custom text format */
@@ -279,10 +279,10 @@ static char __check_doc__[] =
     "\n"
     "This method will return either False (the ACL is valid), or a tuple\n"
     "with two elements. The first element is one of the following\n"
-    "constants:\n"
+    "constants:\n\n"
     "  - ACL_MULTI_ERROR: The ACL contains multiple entries that have a\n"
     "                     tag type that may occur at most once\n"
-    "  - ACL_DUPLICATE_ERROR: The ACL contains multiple ACL_USER or \n"
+    "  - ACL_DUPLICATE_ERROR: The ACL contains multiple ACL_USER or\n"
     "                         ACL_GROUP entries  with the same ID\n"
     "  - ACL_MISS_ERROR: A required entry is missing\n"
     "  - ACL_ENTRY_ERROR: The ACL contains an invalid entry tag type\n"
@@ -376,7 +376,7 @@ static char __applyto_doc__[] =
     "    ACL_TYPE_ACCESS (default) or ACL_TYPE_DEFAULT\n"
     ;
 
-/* Applyes the ACL to a file */
+/* Applies the ACL to a file */
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *myarg;
@@ -544,10 +544,12 @@ static PyObject* ACL_iternext(PyObject *obj) {
 }
 
 static char __ACL_delete_entry_doc__[] =
+    "delete_entry(entry)\n"
     "Deletes an entry from the ACL.\n"
     "\n"
-    "Note: Only with level 2\n"
-    "Parameters:\n"
+    ".. note:: Only available with level 2.\n"
+    "\n"
+    "Parameters:\n\n"
     "  - the Entry object which should be deleted; note that after\n"
     "    this function is called, that object is unusable any longer\n"
     "    and should be deleted\n"
@@ -893,15 +895,17 @@ static int Entry_set_permset(PyObject* obj, PyObject* value, void* arg) {
 }
 
 static char __Entry_copy_doc__[] =
+    "copy(src)\n"
     "Copy an ACL entry.\n"
     "\n"
     "This method sets all the parameters to those of another\n"
-    "entry, even one of another's ACL\n"
-    "Parameters:\n"
+    "entry (either of the same ACL or belonging to another ACL).\n"
+    "\n"
+    "Parameters:\n\n"
     " - src, instance of type Entry\n"
     ;
 
-/* Sets all the entry parameters to another's entry */
+/* Sets all the entry parameters to another entry */
 static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
     Entry_Object *self = (Entry_Object*)obj;
     Entry_Object *other;
@@ -1060,14 +1064,17 @@ static PyObject* Permset_add(PyObject* obj, PyObject* args) {
 }
 
 static char __Permset_delete_doc__[] =
+    "delete(perm)\n"
     "Delete a permission from the permission set.\n"
     "\n"
     "The delete() function deletes the permission contained in \n"
     "the argument perm from the permission set.  An attempt \n"
     "to delete a permission that is not contained in the \n"
     "permission set is not considered an error.\n"
+    "\n"
     "Parameters:\n\n"
-    "  - perm a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...)\n"
+    "  - perm: a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...)\n"
+    "\n"
     "Return value: None\n"
     "\n"
     "Can raise: IOError\n"
@@ -1089,12 +1096,15 @@ static PyObject* Permset_delete(PyObject* obj, PyObject* args) {
 }
 
 static char __Permset_test_doc__[] =
+    "test(perm)\n"
     "Test if a permission exists in the permission set.\n"
     "\n"
-    "The test() function tests if the permission contained in \n"
-    "the argument perm exits the permission set.\n"
+    "The test() function tests if the permission represented by\n"
+    "the argument perm exists in the permission set.\n"
+    "\n"
     "Parameters:\n\n"
-    "  - perm a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...)\n"
+    "  - perm: a permission (ACL_WRITE, ACL_READ, ACL_EXECUTE, ...)\n"
+    "\n"
     "Return value: Boolean\n"
     "\n"
     "Can raise: IOError\n"
@@ -1124,7 +1134,7 @@ static PyObject* Permset_test(PyObject* obj, PyObject* args) {
 static char __ACL_Type_doc__[] =
     "Type which represents a POSIX ACL\n"
     "\n"
-    "Parameters (only one keword parameter should be provided):\n"
+    "Parameters (only one keyword parameter should be provided):\n"
     "  - file=\"...\", meaning create ACL representing\n"
     "    the access ACL of that file\n"
     "  - filedef=\"...\", meaning create ACL representing\n"
@@ -1365,7 +1375,7 @@ static char __Permset_read_doc__[] =
     ;
 
 static char __Permset_write_doc__[] =
-    "Write permsission\n"
+    "Write permission\n"
     "\n"
     "This is a convenience method of access; the \n"
     "same effect can be achieved using the functions\n"
@@ -1451,14 +1461,15 @@ static PyTypeObject Permset_Type = {
 /* Module methods */
 
 static char __deletedef_doc__[] =
+    "delete_default(path)\n"
     "Delete the default ACL from a directory.\n"
     "\n"
-    "This function deletes the default ACL associated with \n"
+    "This function deletes the default ACL associated with\n"
     "a directory (the ACL which will be ANDed with the mode\n"
     "parameter to the open, creat functions).\n"
-    "Parameters:\n"
-    "  - a string representing the directory whose default ACL\n"
-    "    should be deleted\n"
+    "\n"
+    "Parameters:\n\n"
+    "  - path: the directory whose default ACL should be deleted\n"
     ;
 
 /* Deletes the default ACL from a directory */
@@ -1480,10 +1491,11 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
 
 #ifdef HAVE_LINUX
 static char __has_extended_doc__[] =
+    "has_extended(item)\n"
     "Check if a file or filehandle has an extended ACL.\n"
     "\n"
-    "Parameter:\n"
-    "  - either a filename or a file-like object or an integer; this\n"
+    "Parameters:\n"
+    "  - item: either a filename or a file-like object or an integer; this\n"
     "    represents the filesystem object on which to act\n"
     ;
 
@@ -1541,7 +1553,7 @@ static char __posix1e_doc__[] =
     "This module provides support for manipulating POSIX.1e ACLS\n"
     "\n"
     "Depending on the operating system support for POSIX.1e, \n"
-    "the ACL type will have more or less capabilities:\n"
+    "the ACL type will have more or less capabilities:\n\n"
     "  - level 1, only basic support, you can create\n"
     "    ACLs from files and text descriptions;\n"
     "    once created, the type is immutable\n"
@@ -1552,12 +1564,12 @@ static char __posix1e_doc__[] =
     "to acl_entry_t (the Entry type), acl_permset_t (the Permset type).\n"
     "\n"
     "The existence of level 2 support and other extensions can be\n"
-    "checked by the constants:\n"
-    "  - HAS_ACL_ENTRY for level 2 and the Entry/Permset classes\n"
-    "  - HAS_ACL_FROM_MODE for ACL(mode=...) usage\n"
-    "  - HAS_ACL_CHECK for the ACL().check function\n"
-    "  - HAS_EXTENDED_CHECK for the module-level has_extended function\n"
-    "  - HAS_EQUIV_MODE for the ACL().equiv_mode method\n"
+    "checked by the constants:\n\n"
+    "  - ``HAS_ACL_ENTRY`` for level 2 and the Entry/Permset classes\n"
+    "  - ``HAS_ACL_FROM_MODE`` for ACL(mode=...) usage\n"
+    "  - ``HAS_ACL_CHECK`` for the ACL().check function\n"
+    "  - ``HAS_EXTENDED_CHECK`` for the module-level has_extended function\n"
+    "  - ``HAS_EQUIV_MODE`` for the ACL().equiv_mode method\n"
     "\n"
     "Example:\n"
     "\n"

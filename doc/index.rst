@@ -1,7 +1,12 @@
-Welcome to pylibacl's documentation!
-====================================
+======================================
+ Welcome to pylibacl's documentation!
+======================================
 
-Contents:
+.. include:: ../README
+   :start-line: 2
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2

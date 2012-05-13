@@ -20,7 +20,7 @@ $(DOCHTML)/index.html: $(MODNAME) $(RSTFILES)
 doc: $(DOCHTML)/index.html
 
 test:
-	for ver in 2.4 2.5 2.6 3.0 3.1; do \
+	for ver in 2.4 2.5 2.6 2.7 3.0 3.1 3.2; do \
 	  if type python$$ver >/dev/null; then \
 	    echo Testing with python$$ver; \
 	    python$$ver ./setup.py test; \

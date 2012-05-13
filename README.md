@@ -13,7 +13,7 @@ A few internal details are in the file IMPLEMENTATION.
 License
 -------
 
-pylibacl is Copyright (C) 2002-2009 Iustin Pop.
+pylibacl is Copyright (C) 2002-2009, 2012 Iustin Pop.
 
 pylibacl is free software; you can redistribute it and/or modify it under the
 terms of the GNU Lesser General Public License as published by the Free

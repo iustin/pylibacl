@@ -1,19 +1,22 @@
+News
+====
+
 Version 0.5
-===========
+-----------
 
 Added support for Python 3.x and improved support for Unicode filenames.
 
 Version 0.4
-===========
+-----------
 
 License
--------
+~~~~~~~
 
 Starting with this version, pylibacl is licensed under LGPL 2.1,
 Febryary 1999 or any later versions (see README and COPYING).
 
 Linux support
--------------
+~~~~~~~~~~~~~
 
 A few more Linux-specific functions:
 
@@ -25,7 +28,7 @@ A few more Linux-specific functions:
   has an extended ACL
 
 FreeBSD support
----------------
+~~~~~~~~~~~~~~~
 
 FreeBSD 7.x will have almost all the acl manipulation functions that
 Linux has, with the exception of __getstate__/__setstate__. As a
@@ -33,7 +36,7 @@ workaround, use the str() and ACL(text=...) methods to pass around
 textual representations.
 
 Interface
----------
+~~~~~~~~~
 
 At module level there are now a few constants exported for easy-checking
 at runtime what features have been compiled in:
@@ -54,16 +57,16 @@ at runtime what features have been compiled in:
   equiv_mode() method
 
 Internals
----------
+~~~~~~~~~
 
 Many functions have now unittests, which is a good thing.
 
 
 Version 0.3
-===========
+-----------
 
 Linux support
--------------
+~~~~~~~~~~~~~
 
 Under Linux, implement more functions from libacl:
 
@@ -71,3 +74,8 @@ Under Linux, implement more functions from libacl:
 - add ACL().to_any_text, implementing acl_to_any_text
 - add ACL comparison, using acl_cmp
 - add ACL().check, which is a more descriptive function than validate
+
+.. Local Variables:
+.. mode: rst
+.. fill-column: 72
+.. End:

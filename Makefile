@@ -1,4 +1,4 @@
-SPHINXOPTS    =
+SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 DOCDIR        = doc
 DOCHTML       = $(DOCDIR)/html
@@ -13,7 +13,7 @@ $(MODNAME): acl.c
 	./setup.py build_ext --inplace
 
 doc: $(MODNAME)
-	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(DOCHTML)
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(DOCHTML)
 
 test:
 	for ver in 2.4 2.5 2.6 3.0 3.1; do \

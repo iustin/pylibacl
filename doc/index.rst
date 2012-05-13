@@ -6,12 +6,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-.. automodule:: posix1e
-   :members:
+   module.rst
+   implementation.rst
+   news.rst
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Also see the :ref:`search`.

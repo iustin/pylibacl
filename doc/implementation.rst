@@ -1,3 +1,6 @@
+Implementation details
+======================
+
 Functionality level
 -------------------
 
@@ -47,3 +50,60 @@ The POSIX draft has the following stuff (correct me if I'm wrong):
 - the acl_permset_t can contain acl_perm_t value (ACL_READ, ACL_WRITE,
   ACL_EXECUTE, ACL_ADD, ACL_DELETE, ...)
 - functions to manipulate all these, and functions to manipulate files
+
+Currently supported platforms
+-----------------------------
+
+For any other platforms, volunteers are welcome.
+
+Linux
+~~~~~
+
+It needs kernel 2.4 or higher and the libacl library installed (with
+development headers, if installing from rpm). This library is available
+on all modern distributions.
+
+The level of compliance is level 2 (see IMPLEMENTATION), plus some extra
+functions; and as my development is done on Linux, I try to implement
+these extensions when it makes sense.
+
+
+FreeBSD
+~~~~~~~
+
+The current tested version is 7.0. FreeBSD supports all the standards
+functions, but 7.0-RELEASE seems to have some issues regarding the
+acl_valid() function when the qualifier of an ACL_USER or ACL_GROUP
+entry is the same as the current uid. By my interpretation, this should
+be a valid ACL, but FreeBSD declares the ACL invalid. As such, some
+unittests fail on FreeBSD.
+
+Porting to other platforms
+--------------------------
+
+First, determine if your OS supports the full 28 functions of the
+POSIX.1e draft (if so, define HAVE_LEVEL2) or only the first 11
+functions (most common case, meaning only HAVE_LEVEL1).
+
+If your OS supports only LEVEL1, modify ``setup.py`` as appropriately;
+unfortunately, the functionality of the module is quite low.
+
+If your OS supports LEVEL2, there is a function which you must define:
+testing if an acl_permset_t contains a given permission. For example,
+under Linux, the acl library defines::
+
+    int acl_get_perm(acl_permset_t permset_d, acl_perm_t perm);
+
+under FreeBSD, the library defines ``acl_get_perm_np`` with a similar
+syntax. So just see how this is implemented in your platform and either
+define a simple macro or a full function with the syntax::
+
+    static int get_perm(acl_permset_t permset_d, acl_perm_t perm);
+
+which must return 1 if the permset contains perm and 0 otherwise.
+
+
+.. Local Variables:
+.. mode: rst
+.. fill-column: 72
+.. End:

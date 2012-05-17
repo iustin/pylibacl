@@ -44,5 +44,5 @@ setup(name="pylibacl",
                              libraries=libs,
                              define_macros=macros,
                              )],
-      test_suite="tests",
+      test_suite="test",
       )

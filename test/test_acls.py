@@ -30,7 +30,7 @@ import platform
 import posix1e
 from posix1e import *
 
-TEST_DIR = os.environ.get("TESTDIR", ".")
+TEST_DIR = os.environ.get("TEST_DIR", ".")
 
 BASIC_ACL_TEXT = "u::rw,g::r,o::-"
 

@@ -25,6 +25,7 @@ import unittest
 import os
 import tempfile
 import sys
+import platform
 
 import posix1e
 from posix1e import *
@@ -197,6 +198,8 @@ class ModificationTests(aclTest, unittest.TestCase):
 
     def checkRef(self, obj):
         """Checks if a given obj has a 'sane' refcount"""
+        if platform.python_implementation() == "PyPy":
+            return
         ref_cnt = sys.getrefcount(obj)
         # FIXME: hardcoded value for the max ref count... but I've
         # seen it overflow on bad reference counting, so it's better

@@ -152,14 +152,14 @@ class AclExtensions(aclTest, unittest.TestCase):
         basic_acl.applyto(fd)
         for item in fd, fname:
             self.assertFalse(has_extended(item),
-                        "A simple ACL should not be reported as extended")
+                             "A simple ACL should not be reported as extended")
         enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
         self.assertTrue(enhanced_acl.valid(),
                         "Failure to build an extended ACL")
         enhanced_acl.applyto(fd)
         for item in fd, fname:
             self.assertTrue(has_extended(item),
-                        "An extended ACL should be reported as such")
+                            "An extended ACL should be reported as such")
 
     @has_ext(HAS_EQUIV_MODE)
     def testEquivMode(self):
@@ -205,8 +205,8 @@ class ModificationTests(aclTest, unittest.TestCase):
         # seen it overflow on bad reference counting, so it's better
         # to be safe
         if ref_cnt < 2 or ref_cnt > 1024:
-           self.fail("Wrong reference count, expected 2-1024 and got %d" %
-                     ref_cnt)
+            self.fail("Wrong reference count, expected 2-1024 and got %d" %
+                      ref_cnt)
 
     def testStr(self):
         """Test str() of an ACL."""
@@ -245,7 +245,8 @@ class ModificationTests(aclTest, unittest.TestCase):
             e.tag_type = tag_type
             e.permset.clear()
             self.assertFalse(acl.valid(),
-                        "ACL containing duplicate entries should not be valid")
+                "ACL containing duplicate entries"
+                " should not be valid")
             acl.delete_entry(e)
 
     @has_ext(HAS_ACL_ENTRY)
@@ -262,8 +263,8 @@ class ModificationTests(aclTest, unittest.TestCase):
                 e.permset.clear()
                 acl.calc_mask()
                 self.assertTrue(acl.valid(),
-                               "ACL should be able to hold multiple"
-                                " user/group entries")
+                    "ACL should be able to hold multiple"
+                    " user/group entries")
 
     @has_ext(HAS_ACL_ENTRY)
     def testMultipleBadEntries(self):
@@ -279,14 +280,14 @@ class ModificationTests(aclTest, unittest.TestCase):
             e1.permset.clear()
             acl.calc_mask()
             self.assertTrue(acl.valid(), "ACL should be able to add a"
-                            " user/group entry")
+                " user/group entry")
             e2 = acl.append()
             e2.tag_type = tag_type
             e2.qualifier = 0
             e2.permset.clear()
             acl.calc_mask()
             self.assertFalse(acl.valid(), "ACL should not validate when"
-                        " containing two duplicate entries")
+                " containing two duplicate entries")
             acl.delete_entry(e1)
             acl.delete_entry(e2)
 
@@ -308,15 +309,15 @@ class ModificationTests(aclTest, unittest.TestCase):
             str_ps = str(ps)
             self.checkRef(str_ps)
             self.assertFalse(ps.test(perm), "Empty permission set should not"
-                        " have permission '%s'" % pmap[perm])
+                " have permission '%s'" % pmap[perm])
             ps.add(perm)
             self.assertTrue(ps.test(perm), "Permission '%s' should exist"
-                        " after addition" % pmap[perm])
+                " after addition" % pmap[perm])
             str_ps = str(ps)
             self.checkRef(str_ps)
             ps.delete(perm)
             self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
-                        " after deletion" % pmap[perm])
+                " after deletion" % pmap[perm])
 
 
 if __name__ == "__main__":

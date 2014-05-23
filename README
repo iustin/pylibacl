@@ -6,7 +6,7 @@ POSIX.1e Access Control Lists present in some OS/file-systems
 combinations.
 
 Downloads: go to https://github.com/iustin/pylibacl/downloads. Latest
-version is 0.5.1. The source repository is either
+version is 0.5.2. The source repository is either
 at `<git://git.k1024.org/pylibacl.git>`_ or
 at https://github.com/iustin/pylibacl.
 

@@ -1,6 +1,11 @@
 News
 ====
 
+Version 0.5.2
+-------------
+
+No visible changes release: just fix tests when running under pypy.
+
 Version 0.5.1
 -------------
 

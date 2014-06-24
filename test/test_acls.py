@@ -3,7 +3,7 @@
 
 """Unittests for the posix1e module"""
 
-#  Copyright (C) 2002-2009, 2012 Iustin Pop <iusty@k1024.org>
+#  Copyright (C) 2002-2009, 2012, 2014 Iustin Pop <iusty@k1024.org>
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,9 @@ BASIC_ACL_TEXT = "u::rw,g::r,o::-"
 M0500 = 320 # octal 0500
 M0644 = 420 # octal 0644
 M0755 = 493 # octal 755
+
+# Check if running under Python 3
+IS_PY_3K = sys.hexversion >= 0x03000000
 
 def _skip_test(fn):
     """Wrapper to skip a test"""
@@ -318,6 +321,19 @@ class ModificationTests(aclTest, unittest.TestCase):
             ps.delete(perm)
             self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
                 " after deletion" % pmap[perm])
+
+
+    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    def testQualifierOverflow(self):
+        """Tests qualifier overflow handling"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        qualifier = sys.maxsize * 2
+        for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
+            e.tag_type = posix1e.ACL_USER
+            with self.assertRaises(OverflowError):
+                e.qualifier = qualifier
+            print(e.qualifier)
 
 
 if __name__ == "__main__":

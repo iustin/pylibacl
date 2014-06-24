@@ -841,7 +841,11 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
                         "qualifier must be integer");
         return -1;
     }
-    uidgid = PyInt_AsLong(value);
+    if((uidgid = PyInt_AsLong(value)) == -1) {
+        if(PyErr_Occurred() != NULL) {
+            return -1;
+        }
+    }
     if(acl_set_qualifier(self->entry, (void*)&uidgid) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;

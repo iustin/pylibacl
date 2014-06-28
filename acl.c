@@ -1843,17 +1843,15 @@ void initposix1e(void)
     PyModule_AddIntConstant(m, "ACL_MISS_ERROR", ACL_MISS_ERROR);
     PyModule_AddIntConstant(m, "ACL_ENTRY_ERROR", ACL_ENTRY_ERROR);
 
-    /* declare the Linux extensions */
-    PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 1);
-    PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 1);
-    PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 1);
-    PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", 1);
+#define LINUX_EXT_VAL 1
 #else
-    PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", 0);
-    PyModule_AddIntConstant(m, "HAS_ACL_CHECK", 0);
-    PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", 0);
-    PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", 0);
+#define LINUX_EXT_VAL 0
 #endif
+    /* declare the Linux extensions */
+    PyModule_AddIntConstant(m, "HAS_ACL_FROM_MODE", LINUX_EXT_VAL);
+    PyModule_AddIntConstant(m, "HAS_ACL_CHECK", LINUX_EXT_VAL);
+    PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", LINUX_EXT_VAL);
+    PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", LINUX_EXT_VAL);
 
 #ifdef IS_PY3K
     return m;

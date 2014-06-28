@@ -672,6 +672,46 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
 
 /***** Entry type *****/
 
+typedef struct {
+    acl_tag_t tag;
+    union {
+        uid_t uid;
+        gid_t gid;
+    };
+} tag_qual;
+
+/* Helper function to get the tag and qualifier of an Entry at the
+   same time. This is "needed" because the acl_get_qualifier function
+   returns a pointer to different types, based on the tag value, and
+   thus it's not straightforward to get the right type.
+
+   It sets a Python exception if an error occurs, and return 0 in this
+   case. If successful, the tag is set to the tag type, and the
+   qualifier (if any) to either the uid or the gid entry in the
+   tag_qual structure.
+*/
+int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
+    void *p;
+
+    if(acl_get_tag_type(entry, &tq->tag) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return 0;
+    }
+    if (tq->tag == ACL_USER || tq->tag == ACL_GROUP) {
+        if((p = acl_get_qualifier(entry)) == NULL) {
+            PyErr_SetFromErrno(PyExc_IOError);
+            return 0;
+        }
+        if (tq->tag == ACL_USER) {
+            tq->uid = *(uid_t*)p;
+        } else {
+            tq->gid = *(gid_t*)p;
+        }
+        acl_free(p);
+    }
+    return 1;
+}
+
 /* Creation of a new Entry instance */
 static PyObject* Entry_new(PyTypeObject* type, PyObject* args,
                            PyObject *keywds) {
@@ -725,31 +765,18 @@ static void Entry_dealloc(PyObject* obj) {
 
 /* Converts the entry to a text format */
 static PyObject* Entry_str(PyObject *obj) {
-    acl_tag_t tag;
-    uid_t qualifier;
-    void *p;
     PyObject *format, *kind;
     Entry_Object *self = (Entry_Object*) obj;
+    tag_qual tq;
 
-    if(acl_get_tag_type(self->entry, &tag) == -1) {
-        PyErr_SetFromErrno(PyExc_IOError);
+    if(!get_tag_qualifier(self->entry, &tq)) {
         return NULL;
-    }
-    if(tag == ACL_USER || tag == ACL_GROUP) {
-        if((p = acl_get_qualifier(self->entry)) == NULL) {
-            PyErr_SetFromErrno(PyExc_IOError);
-            return NULL;
-        }
-        qualifier = *(uid_t*)p;
-        acl_free(p);
-    } else {
-        qualifier = 0;
     }
 
     format = MyString_FromString("ACL entry for ");
     if(format == NULL)
         return NULL;
-    switch(tag) {
+    switch(tq.tag) {
     case ACL_UNDEFINED_TAG:
         kind = MyString_FromString("undefined type");
         break;
@@ -763,10 +790,14 @@ static PyObject* Entry_str(PyObject *obj) {
         kind = MyString_FromString("the others");
         break;
     case ACL_USER:
-        kind = MyString_FromFormat("user with uid %d", qualifier);
+        /* FIXME: here and in the group case, we're formatting with
+           unsigned, because there's no way to automatically determine
+           the signed-ness of the types; on Linux(glibc) they're
+           unsigned, so we'll go along with that */
+        kind = MyString_FromFormat("user with uid %u", tq.uid);
         break;
     case ACL_GROUP:
-        kind = MyString_FromFormat("group with gid %d", qualifier);
+        kind = MyString_FromFormat("group with gid %u", tq.gid);
         break;
     case ACL_MASK:
         kind = MyString_FromString("the mask");
@@ -828,7 +859,11 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
  */
 static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
-    int uidgid;
+    long uidgid;
+    uid_t uid;
+    gid_t gid;
+    void *p;
+    acl_tag_t tag;
 
     if(value == NULL) {
         PyErr_SetString(PyExc_TypeError,
@@ -846,7 +881,38 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
             return -1;
         }
     }
-    if(acl_set_qualifier(self->entry, (void*)&uidgid) == -1) {
+    /* Due to how acl_set_qualifier takes its argument, we have to do
+       this ugly dance with two variables and a pointer that will
+       point to one of them. */
+    if(acl_get_tag_type(self->entry, &tag) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+    uid = uidgid;
+    gid = uidgid;
+    switch(tag) {
+    case ACL_USER:
+      if((long)uid != uidgid) {
+        PyErr_SetString(PyExc_OverflowError, "cannot assign given qualifier");
+        return -1;
+      } else {
+        p = &uid;
+      }
+      break;
+    case ACL_GROUP:
+      if((long)gid != uidgid) {
+        PyErr_SetString(PyExc_OverflowError, "cannot assign given qualifier");
+        return -1;
+      } else {
+        p = &gid;
+      }
+      break;
+    default:
+      PyErr_SetString(PyExc_TypeError,
+                      "can only set qualifiers on ACL_USER or ACL_GROUP entries");
+      return -1;
+    }
+    if(acl_set_qualifier(self->entry, p) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -857,20 +923,26 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
 /* Returns the qualifier of the entry */
 static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
-    void *p;
-    int value;
+    long value;
+    tag_qual tq;
 
     if (self->entry == NULL) {
         PyErr_SetString(PyExc_AttributeError, "entry attribute");
         return NULL;
     }
-    if((p = acl_get_qualifier(self->entry)) == NULL) {
-        PyErr_SetFromErrno(PyExc_IOError);
+    if(!get_tag_qualifier(self->entry, &tq)) {
         return NULL;
     }
-    value = *(uid_t*)p;
-    acl_free(p);
-
+    if (tq.tag == ACL_USER) {
+        value = tq.uid;
+    } else if (tq.tag == ACL_GROUP) {
+        value = tq.gid;
+    } else {
+        PyErr_SetString(PyExc_TypeError,
+                        "given entry doesn't have an user or"
+                        " group tag");
+        return NULL;
+    }
     return PyInt_FromLong(value);
 }
 

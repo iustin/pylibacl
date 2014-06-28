@@ -26,6 +26,7 @@ import os
 import tempfile
 import sys
 import platform
+import re
 
 import posix1e
 from posix1e import *
@@ -324,16 +325,54 @@ class ModificationTests(aclTest, unittest.TestCase):
 
 
     @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    def testQualifierValues(self):
+        """Tests qualifier correct store/retrieval"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        # work around deprecation warnings
+        if hasattr(self, 'assertRegex'):
+            fn = self.assertRegex
+        else:
+            fn = self.assertRegexpMatches
+        for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
+            qualifier = 1
+            e.tag_type = tag
+            while True:
+                if tag == posix1e.ACL_USER:
+                    regex = re.compile("user with uid %d" % qualifier)
+                else:
+                    regex = re.compile("group with gid %d" % qualifier)
+                try:
+                    e.qualifier = qualifier
+                except OverflowError:
+                    # reached overflow condition, break
+                    break
+                self.assertEqual(e.qualifier, qualifier)
+                fn(str(e), regex)
+                qualifier *= 2
+
+    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
     def testQualifierOverflow(self):
         """Tests qualifier overflow handling"""
         acl = posix1e.ACL()
         e = acl.append()
         qualifier = sys.maxsize * 2
         for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
-            e.tag_type = posix1e.ACL_USER
+            e.tag_type = tag
             with self.assertRaises(OverflowError):
                 e.qualifier = qualifier
-            print(e.qualifier)
+
+    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    def testNegativeQualifier(self):
+        """Tests negative qualifier handling"""
+        # Note: this presumes that uid_t/gid_t in C are unsigned...
+        acl = posix1e.ACL()
+        e = acl.append()
+        for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
+            e.tag_type = tag
+            for qualifier in [-10, -5, -1]:
+                with self.assertRaises(OverflowError):
+                    e.qualifier = qualifier
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 
 """Unittests for the posix1e module"""
 
-#  Copyright (C) 2002-2009, 2012, 2014 Iustin Pop <iusty@k1024.org>
+#  Copyright (C) 2002-2009, 2012, 2014, 2015 Iustin Pop <iusty@k1024.org>
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -214,7 +214,7 @@ class ModificationTests(aclTest, unittest.TestCase):
 
     def testStr(self):
         """Test str() of an ACL."""
-        acl = posix1e.ACL()
+        acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         str_acl = str(acl)
         self.checkRef(str_acl)
 

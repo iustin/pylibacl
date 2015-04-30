@@ -1,6 +1,17 @@
 News
 ====
 
+Version 0.5.3
+-------------
+
+FreeBSD fixes:
+
+- Enable all FreeBSD versions after 7.x at level 2 (thanks to Garrett
+  Cooper).
+- Make test suite pass under FreeBSD, which has a stricter behaviour
+  with regards to invalid ACLs (which we do exercise in the test suite),
+  thanks again to Garret for the bug reports.
+
 Version 0.5.2
 -------------
 

@@ -27,6 +27,7 @@ import tempfile
 import sys
 import platform
 import re
+import errno
 
 import posix1e
 from posix1e import *
@@ -58,6 +59,20 @@ def has_ext(extension):
     else:
         return lambda x: x
 
+def ignore_ioerror(errnum, fn, *args, **kwargs):
+    """Call a function while ignoring some IOErrors.
+
+    This is needed as some OSes (e.g. FreeBSD) return failure (EINVAL)
+    when doing certain operations on an invalid ACL.
+
+    """
+    try:
+        fn(*args, **kwargs)
+    except IOError:
+        err = sys.exc_info()[1]
+        if err.errno == errnum:
+            return
+        raise
 
 class aclTest:
     """Support functions ACLs"""
@@ -224,7 +239,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         acl = posix1e.ACL()
         e = acl.append()
         e.tag_type = posix1e.ACL_OTHER
-        acl.calc_mask()
+        ignore_ioerror(errno.EINVAL, acl.calc_mask)
         str_format = str(e)
         self.checkRef(str_format)
 
@@ -234,9 +249,9 @@ class ModificationTests(aclTest, unittest.TestCase):
         acl = posix1e.ACL()
         e = acl.append()
         e.tag_type = posix1e.ACL_OTHER
-        acl.calc_mask()
+        ignore_ioerror(errno.EINVAL, acl.calc_mask)
         acl.delete_entry(e)
-        acl.calc_mask()
+        ignore_ioerror(errno.EINVAL, acl.calc_mask)
 
     @has_ext(HAS_ACL_ENTRY)
     def testDoubleEntries(self):
@@ -273,11 +288,11 @@ class ModificationTests(aclTest, unittest.TestCase):
     @has_ext(HAS_ACL_ENTRY)
     def testMultipleBadEntries(self):
         """Test multiple invalid entries"""
-        acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl.valid(), "ACL built from standard description"
-                        " should be valid")
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
+            acl = posix1e.ACL(text=BASIC_ACL_TEXT)
+            self.assertTrue(acl.valid(), "ACL built from standard description"
+                                         " should be valid")
             e1 = acl.append()
             e1.tag_type = tag_type
             e1.qualifier = 0
@@ -289,11 +304,13 @@ class ModificationTests(aclTest, unittest.TestCase):
             e2.tag_type = tag_type
             e2.qualifier = 0
             e2.permset.clear()
-            acl.calc_mask()
+            ignore_ioerror(errno.EINVAL, acl.calc_mask)
             self.assertFalse(acl.valid(), "ACL should not validate when"
                 " containing two duplicate entries")
             acl.delete_entry(e1)
-            acl.delete_entry(e2)
+            # FreeBSD trips over itself here and can't delete the
+            # entry, even though it still exists.
+            ignore_ioerror(errno.EINVAL, acl.delete_entry, e2)
 
     @has_ext(HAS_ACL_ENTRY)
     def testPermset(self):

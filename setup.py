@@ -18,7 +18,7 @@ elif u_sysname == "GNU/kFreeBSD":
     libs.append("acl")
 elif u_sysname == "FreeBSD":
     macros.append(("HAVE_FREEBSD", None))
-    if 7 <= int(u_release.split('.', 1)[0]):
+    if int(u_release.split(".", 1)[0]) >= 7:
         macros.append(("HAVE_LEVEL2", None))
 elif u_sysname == "Darwin":
     libs.append("pthread")

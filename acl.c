@@ -704,27 +704,31 @@ typedef struct {
     };
 } tag_qual;
 
+/* Pre-declaring the function is more friendly to cpychecker, sigh. */
+static int get_tag_qualifier(acl_entry_t entry, tag_qual *tq)
+  CPYCHECKER_NEGATIVE_RESULT_SETS_EXCEPTION;
+
 /* Helper function to get the tag and qualifier of an Entry at the
    same time. This is "needed" because the acl_get_qualifier function
    returns a pointer to different types, based on the tag value, and
    thus it's not straightforward to get the right type.
 
-   It sets a Python exception if an error occurs, and return 0 in this
-   case. If successful, the tag is set to the tag type, and the
+   It sets a Python exception if an error occurs, and returns -1 in
+   this case. If successful, the tag is set to the tag type, the
    qualifier (if any) to either the uid or the gid entry in the
-   tag_qual structure.
+   tag_qual structure, and the return value is 0.
 */
-int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
+static int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
     void *p;
 
     if(acl_get_tag_type(entry, &tq->tag) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
-        return 0;
+        return -1;
     }
     if (tq->tag == ACL_USER || tq->tag == ACL_GROUP) {
         if((p = acl_get_qualifier(entry)) == NULL) {
             PyErr_SetFromErrno(PyExc_IOError);
-            return 0;
+            return -1;
         }
         if (tq->tag == ACL_USER) {
             tq->uid = *(uid_t*)p;
@@ -733,7 +737,7 @@ int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
         }
         acl_free(p);
     }
-    return 1;
+    return 0;
 }
 
 /* Creation of a new Entry instance */
@@ -793,7 +797,7 @@ static PyObject* Entry_str(PyObject *obj) {
     Entry_Object *self = (Entry_Object*) obj;
     tag_qual tq;
 
-    if(!get_tag_qualifier(self->entry, &tq)) {
+    if(get_tag_qualifier(self->entry, &tq) < 0) {
         return NULL;
     }
 
@@ -954,7 +958,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
         PyErr_SetString(PyExc_AttributeError, "entry attribute");
         return NULL;
     }
-    if(!get_tag_qualifier(self->entry, &tq)) {
+    if(get_tag_qualifier(self->entry, &tq) < 0) {
         return NULL;
     }
     if (tq.tag == ACL_USER) {

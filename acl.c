@@ -67,7 +67,20 @@
 #endif
 #endif
 
-static PyTypeObject ACL_Type;
+/* Used for cpychecker: */
+/* The checker automatically defines this preprocessor name when creating
+   the custom attribute: */
+#if defined(WITH_CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF_ATTRIBUTE)
+#define CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF(typename) \
+  __attribute__((cpychecker_type_object_for_typedef(typename)))
+#else
+/* This handles the case where we're compiling with a "vanilla"
+   compiler that doesn't supply this attribute: */
+#define CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF(typename)
+#endif
+
+static PyTypeObject ACL_Type
+  CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF("ACL_Object");
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args);
 static PyObject* ACL_valid(PyObject* obj, PyObject* args);
 
@@ -77,8 +90,10 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args);
 #endif
 
 #ifdef HAVE_LEVEL2
-static PyTypeObject Entry_Type;
-static PyTypeObject Permset_Type;
+static PyTypeObject Entry_Type
+  CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF("Entry_Object");
+static PyTypeObject Permset_Type
+  CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF("Permset_Object");
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
                              PyObject *keywds);
 #endif

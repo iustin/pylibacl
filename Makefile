@@ -6,7 +6,7 @@ DOCTREES      = $(DOCDIR)/doctrees
 ALLSPHINXOPTS = -d $(DOCTREES) $(SPHINXOPTS) $(DOCDIR)
 
 MODNAME = posix1e.so
-RSTFILES = doc/index.rst doc/module.rst NEWS README doc/conf.py
+RSTFILES = doc/index.rst doc/module.rst NEWS README.rst doc/conf.py
 
 all: doc test
 

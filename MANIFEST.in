@@ -1,7 +1,7 @@
 include COPYING
 include Makefile
 include NEWS
-include README
+include README.rst
 include acl.c
 include setup.cfg
 include doc/conf.py

@@ -4,6 +4,8 @@ News
 Version 0.5.3
 -------------
 
+*released Thu, 30 Apr 2015*
+
 FreeBSD fixes:
 
 - Enable all FreeBSD versions after 7.x at level 2 (thanks to Garrett
@@ -15,10 +17,14 @@ FreeBSD fixes:
 Version 0.5.2
 -------------
 
+*released Sat, 24 May 2014*
+
 No visible changes release: just fix tests when running under pypy.
 
 Version 0.5.1
 -------------
+
+*released Sun, 13 May 2012*
 
 A bug-fix only release. Critical bugs (memory leaks and possible
 segmentation faults) have been fixed thanks to Dave Malcolm and his
@@ -36,10 +42,14 @@ SourceForge to GitHub.
 Version 0.5
 -----------
 
+*released Sun, 27 Dec 2009*
+
 Added support for Python 3.x and improved support for Unicode filenames.
 
 Version 0.4
 -----------
+
+*released Sat, 28 Jun 2008*
 
 License
 ~~~~~~~
@@ -96,6 +106,8 @@ Many functions have now unittests, which is a good thing.
 
 Version 0.3
 -----------
+
+*released Sun, 21 Oct 2007*
 
 Linux support
 ~~~~~~~~~~~~~

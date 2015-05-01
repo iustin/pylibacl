@@ -79,6 +79,15 @@
 #define CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF(typename)
 #endif
 
+/* The checker automatically defines this preprocessor name when creating
+   the custom attribute: */
+#if defined(WITH_CPYCHECKER_NEGATIVE_RESULT_SETS_EXCEPTION_ATTRIBUTE)
+   #define CPYCHECKER_NEGATIVE_RESULT_SETS_EXCEPTION \
+__attribute__((cpychecker_negative_result_sets_exception))
+   #else
+   #define CPYCHECKER_NEGATIVE_RESULT_SETS_EXCEPTION
+#endif
+
 static PyTypeObject ACL_Type
   CPYCHECKER_TYPE_OBJECT_FOR_TYPEDEF("ACL_Object");
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args);

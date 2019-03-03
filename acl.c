@@ -151,7 +151,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
                               "mode", NULL };
     char *format = "|etisO!sH";
-    mode_t mode = 0;
+    int mode = -1;
 #else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
     char *format = "|etisO!s";
@@ -193,7 +193,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     else if(filedef != NULL)
         self->acl = acl_get_file(filedef, ACL_TYPE_DEFAULT);
 #ifdef HAVE_LINUX
-    else if(PyMapping_HasKeyString(keywds, kwlist[5]))
+    else if(mode != -1)
         self->acl = acl_from_mode(mode);
 #endif
     else

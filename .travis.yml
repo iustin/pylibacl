@@ -1,15 +1,22 @@
 language: python
 
-# let's test as many versions as we can!
-python:
-    - "2.7"
-    - "3.2"
-    - "3.3"
-    - "3.4"
-    - "3.5"
-    - "3.6"
-    - "3.7"
-    - "nightly"
+matrix:
+  include:
+    - dist: trusty
+      python:
+        - "2.7"
+        - "3.2"
+        - "3.3"
+        - "3.4"
+        - "3.5"
+        - "3.6"
+        - "nightly"
+    - dist: xenial
+      python:
+        - "2.7"
+        - "3.6"
+        - "3.7"
+        - "nightly"
 
 # we don't need any python dependencies:
 install: true

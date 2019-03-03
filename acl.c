@@ -60,11 +60,6 @@
 #define MyString_FromFormat PyBytes_FromFormat
 #define MyString_FromString PyBytes_FromString
 #define MyString_FromStringAndSize PyBytes_FromStringAndSize
-
-/* Python 2.6 already defines Py_TYPE */
-#ifndef Py_TYPE
-#define Py_TYPE(o)    (((PyObject*)(o))->ob_type)
-#endif
 #endif
 
 /* Used for cpychecker: */

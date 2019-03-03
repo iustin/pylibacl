@@ -1,7 +1,7 @@
 pylibacl
 ========
 
-This is a Python 2.4+ extension module allows you to manipulate the
+This is a Python 2.7+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
 combinations.
 
@@ -22,7 +22,7 @@ FreeBSD 7 also has quite good support. If any other platform
 implements the POSIX.1e draft, pylibacl can be used. I heard that
 Solaris does, but I can't test it.
 
-- Python 2.4 or newer
+- Python 2.7 or newer
 - operating system:
     - Linux, kernel v2.4 or newer, and the libacl library and
       development packages (all modern distributions should have this,

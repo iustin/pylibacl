@@ -59,34 +59,6 @@ PERMSETS = {
 # Check if running under Python 3
 IS_PY_3K = sys.hexversion >= 0x03000000
 
-def _skip_test(fn):
-    """Wrapper to skip a test for python 2.6"""
-    new_fn = lambda x: None
-    new_fn.__doc__ = "SKIPPED %s" % fn.__doc__
-    return new_fn
-
-def _ignore_test(fn):
-    """Ignore failures in a test for python 2.6"""
-    def ignorer():
-        try:
-            fn()
-        except AssertionError:
-            print ("Ignoring failure")
-    return ignorer
-
-def has_ext(extension):
-    """Decorator to skip tests based on platform support"""
-    if not extension:
-        if hasattr(unittest, 'skip'):
-          return unittest.skip("Precondition failed")
-        else:
-          return _skip_test
-    else:
-        return lambda func: func
-
-def expectFail():
-    return getattr(unittest, 'expectedFailure', _ignore_test)
-
 def ignore_ioerror(errnum, fn, *args, **kwargs):
     """Call a function while ignoring some IOErrors.
 
@@ -205,14 +177,14 @@ class LoadTests(aclTest, unittest.TestCase):
 class AclExtensions(aclTest, unittest.TestCase):
     """ACL extensions checks"""
 
-    @has_ext(HAS_ACL_FROM_MODE)
+    @unittest.skipUnless(HAS_ACL_FROM_MODE, "Missing HAS_ACL_FROM_MODE")
     def testFromMode(self):
         """Test loading ACLs from an octal mode"""
         acl1 = posix1e.ACL(mode=M0644)
         self.assertTrue(acl1.valid(),
                         "ACL created via octal mode shoule be valid")
 
-    @has_ext(HAS_ACL_CHECK)
+    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
     def testAclCheck(self):
         """Test the acl_check method"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -220,7 +192,7 @@ class AclExtensions(aclTest, unittest.TestCase):
         acl2 = posix1e.ACL()
         self.assertTrue(acl2.check(), "Empty ACL should not be valid")
 
-    @has_ext(HAS_EXTENDED_CHECK)
+    @unittest.skipUnless(HAS_EXTENDED_CHECK, "Extended ACL check not supported")
     def testExtended(self):
         """Test the acl_extended function"""
         fd, fname = self._getfile()
@@ -237,12 +209,12 @@ class AclExtensions(aclTest, unittest.TestCase):
             self.assertTrue(has_extended(item),
                             "An extended ACL should be reported as such")
 
-    @has_ext(HAS_EXTENDED_CHECK)
+    @unittest.skipUnless(HAS_EXTENDED_CHECK, "Extended ACL check not supported")
     def testExtendedArgHandling(self):
       self.assertRaises(TypeError, has_extended)
       self.assertRaises(TypeError, has_extended, object())
 
-    @has_ext(HAS_EQUIV_MODE)
+    @unittest.skipUnless(HAS_EQUIV_MODE, "equiv_mode not supported")
     def testEquivMode(self):
         """Test the equiv_mode function"""
         if HAS_ACL_FROM_MODE:
@@ -254,20 +226,20 @@ class AclExtensions(aclTest, unittest.TestCase):
         acl = posix1e.ACL(text="u::rx,g::-,o::-")
         self.assertEqual(acl.equiv_mode(), M0500)
 
-    @has_ext(HAS_ACL_CHECK)
+    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
     def testToAnyText(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.assertIn(encode("u::"),
                           acl.to_any_text(options=posix1e.TEXT_ABBREVIATE))
         self.assertIn(encode("user::"), acl.to_any_text())
 
-    @has_ext(HAS_ACL_CHECK)
+    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
     def testToAnyTextWrongArgs(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         self.assertRaises(TypeError, acl.to_any_text, foo="bar")
 
 
-    @has_ext(HAS_ACL_CHECK)
+    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
     def testRichCompare(self):
         acl1 = posix1e.ACL(text="u::rw,g::r,o::r")
         acl2 = posix1e.ACL(acl=acl1)
@@ -280,7 +252,8 @@ class AclExtensions(aclTest, unittest.TestCase):
         self.assertFalse(acl1 == 1)
         self.assertRaises(TypeError, operator.gt, acl1, True)
 
-    @has_ext(hasattr(posix1e.ACL, "__cmp__") and __pypy__ is None)
+    @unittest.skipUnless(hasattr(posix1e.ACL, "__cmp__"), "__cmp__ is missing")
+    @unittest.skipUnless(__pypy__ is None, "Disabled under pypy")
     def testCmp(self):
         acl1 = posix1e.ACL()
         self.assertRaises(TypeError, acl1.__cmp__, acl1)
@@ -291,7 +264,7 @@ class AclExtensions(aclTest, unittest.TestCase):
         self.assertRaises(TypeError, acl1.applyto, object())
         self.assertRaises(TypeError, acl1.applyto, object(), object())
 
-    @has_ext(HAS_ACL_ENTRY)
+    @unittest.skipUnless(HAS_ACL_ENTRY, "ACL entries not supported")
     def testAclIterator(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         #self.assertEqual(len(acl), 3)
@@ -307,7 +280,7 @@ class WriteTests(aclTest, unittest.TestCase):
         dname = self._getdir()
         posix1e.delete_default(dname)
 
-    @has_ext(__pypy__ is None)
+    @unittest.skipUnless(__pypy__ is None, "Disabled under pypy")
     def testDeleteDefaultWrongArg(self):
         self.assertRaises(TypeError, posix1e.delete_default, object())
 
@@ -322,6 +295,7 @@ class WriteTests(aclTest, unittest.TestCase):
         acl2.applyto(dname)
 
 
+@unittest.skipUnless(HAS_ACL_ENTRY, "ACL entries not supported")
 class ModificationTests(aclTest, unittest.TestCase):
     """ACL modification tests"""
 
@@ -343,7 +317,6 @@ class ModificationTests(aclTest, unittest.TestCase):
         str_acl = str(acl)
         self.checkRef(str_acl)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testAppend(self):
         """Test append a new Entry to the ACL"""
         acl = posix1e.ACL()
@@ -356,13 +329,11 @@ class ModificationTests(aclTest, unittest.TestCase):
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         self.assertFalse(acl.valid())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testWrongAppend(self):
         """Test append a new Entry to the ACL based on wrong object type"""
         acl = posix1e.ACL()
         self.assertRaises(TypeError, acl.append, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testEntryCreation(self):
         acl = posix1e.ACL()
         e = posix1e.Entry(acl)
@@ -370,13 +341,11 @@ class ModificationTests(aclTest, unittest.TestCase):
         str_format = str(e)
         self.checkRef(str_format)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testEntryFailedCreation(self):
         # Checks for partial initialisation and deletion on error
         # path.
         self.assertRaises(TypeError, posix1e.Entry, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testDelete(self):
         """Test delete Entry from the ACL"""
         acl = posix1e.ACL()
@@ -386,7 +355,6 @@ class ModificationTests(aclTest, unittest.TestCase):
         acl.delete_entry(e)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testDoubleDelete(self):
         """Test delete Entry from the ACL"""
         # This is not entirely valid/correct, since the entry object
@@ -402,7 +370,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertRaises(EnvironmentError, acl.delete_entry, e)
 
     # This currently fails as this deletion seems to be accepted :/
-    @has_ext(HAS_ACL_ENTRY and False)
+    @unittest.skip("Entry deletion is unreliable")
     def testDeleteInvalidEntry(self):
         """Test delete foreign Entry from the ACL"""
         acl1 = posix1e.ACL()
@@ -412,13 +380,11 @@ class ModificationTests(aclTest, unittest.TestCase):
         ignore_ioerror(errno.EINVAL, acl1.calc_mask)
         self.assertRaises(EnvironmentError, acl2.delete_entry, e)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testDeleteInvalidObject(self):
         """Test delete a non-Entry from the ACL"""
         acl = posix1e.ACL()
         self.assertRaises(TypeError, acl.delete_entry, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testDoubleEntries(self):
         """Test double entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -433,7 +399,6 @@ class ModificationTests(aclTest, unittest.TestCase):
                 " should not be valid")
             acl.delete_entry(e)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testMultipleGoodEntries(self):
         """Test multiple valid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -450,7 +415,6 @@ class ModificationTests(aclTest, unittest.TestCase):
                     "ACL should be able to hold multiple"
                     " user/group entries")
 
-    @has_ext(HAS_ACL_ENTRY)
     def testMultipleBadEntries(self):
         """Test multiple invalid entries"""
         for tag_type in (posix1e.ACL_USER,
@@ -477,7 +441,6 @@ class ModificationTests(aclTest, unittest.TestCase):
             # entry, even though it still exists.
             ignore_ioerror(errno.EINVAL, acl.delete_entry, e2)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testCopy(self):
         acl = ACL()
         e1 = acl.append()
@@ -496,13 +459,11 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertTrue(p2.write)
         self.assertEqual(e1.tag_type, e2.tag_type)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testCopyWrongArg(self):
         acl = ACL()
         e = acl.append()
         self.assertRaises(TypeError, e.copy, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testSetPermset(self):
         acl = ACL()
         e1 = acl.append()
@@ -521,7 +482,6 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertTrue(e2.permset.write)
         self.assertEqual(e2.tag_type, ACL_GROUP)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testSetPermsetWrongArg(self):
         acl = ACL()
         e = acl.append()
@@ -529,7 +489,6 @@ class ModificationTests(aclTest, unittest.TestCase):
             e.permset = v
         self.assertRaises(TypeError, setter, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testPermsetCreation(self):
         acl = ACL()
         e = acl.append()
@@ -537,11 +496,9 @@ class ModificationTests(aclTest, unittest.TestCase):
         p2 = Permset(e)
         #self.assertEqual(p1, p2)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testPermsetCreationWrongArg(self):
         self.assertRaises(TypeError, Permset, object())
 
-    @has_ext(HAS_ACL_ENTRY)
     def testPermset(self):
         """Test permissions"""
         acl = posix1e.ACL()
@@ -565,7 +522,6 @@ class ModificationTests(aclTest, unittest.TestCase):
             self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
                 " after deletion" % txt)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testPermsetViaAccessors(self):
         """Test permissions"""
         acl = posix1e.ACL()
@@ -597,7 +553,6 @@ class ModificationTests(aclTest, unittest.TestCase):
             self.assertFalse(getter(perm), "Permission '%s' should not exist"
                 " after deletion" % txt)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testPermsetInvalidType(self):
         acl = posix1e.ACL()
         e = acl.append()
@@ -610,7 +565,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertRaises(TypeError, ps.test, "foobar")
         self.assertRaises(ValueError, setter)
 
-    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
     def testQualifierValues(self):
         """Tests qualifier correct store/retrieval"""
         acl = posix1e.ACL()
@@ -637,7 +592,7 @@ class ModificationTests(aclTest, unittest.TestCase):
                 fn(str(e), regex)
                 qualifier *= 2
 
-    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
     def testQualifierOverflow(self):
         """Tests qualifier overflow handling"""
         acl = posix1e.ACL()
@@ -648,7 +603,7 @@ class ModificationTests(aclTest, unittest.TestCase):
             with self.assertRaises(OverflowError):
                 e.qualifier = qualifier
 
-    @has_ext(HAS_ACL_ENTRY and IS_PY_3K)
+    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
     def testNegativeQualifier(self):
         """Tests negative qualifier handling"""
         # Note: this presumes that uid_t/gid_t in C are unsigned...
@@ -660,7 +615,6 @@ class ModificationTests(aclTest, unittest.TestCase):
                 with self.assertRaises(OverflowError):
                     e.qualifier = qualifier
 
-    @has_ext(HAS_ACL_ENTRY)
     def testInvalidQualifier(self):
         """Tests invalid qualifier handling"""
         acl = posix1e.ACL()
@@ -672,7 +626,6 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertRaises(TypeError, set_qual, object())
         self.assertRaises((TypeError, AttributeError), del_qual)
 
-    @has_ext(HAS_ACL_ENTRY)
     def testQualifierOnWrongTag(self):
         """Tests qualifier setting on wrong tag"""
         acl = posix1e.ACL()
@@ -686,7 +639,6 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.assertRaises(TypeError, get_qual)
 
 
-    @has_ext(HAS_ACL_ENTRY)
     def testTagTypes(self):
         """Tests tag type correct set/get"""
         acl = posix1e.ACL()
@@ -699,7 +651,6 @@ class ModificationTests(aclTest, unittest.TestCase):
             # check we can show all tag types without breaking
             self.assertTrue(str(e))
 
-    @has_ext(HAS_ACL_ENTRY)
     def testInvalidTags(self):
         """Tests tag type incorrect set/get"""
         acl = posix1e.ACL()

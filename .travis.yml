@@ -11,12 +11,8 @@ python:
 
 matrix:
   include:
-    - dist: xenial
-      python:
-        - "2.7"
-        - "3.6"
-        - "3.7"
-        - "nightly"
+    - python: "3.7"
+      dist: xenial
 
 # we don't need any python dependencies:
 install: true

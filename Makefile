@@ -31,10 +31,10 @@ test:
 	    fi; \
 	  done; \
 	done; \
-	if type pypy >/dev/null; then \
-	  echo Testing with pypy; \
-	  pypy ./setup.py test -q; \
-	fi
+#	if type pypy >/dev/null; then \
+#	  echo Testing with pypy; \
+#	  pypy ./setup.py test -q; \
+#	fi
 
 coverage:
 	$(MAKE) clean

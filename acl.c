@@ -150,7 +150,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
                               "mode", NULL };
-    char *format = "|etisO!sH";
+    char *format = "|etisO!si";
     int mode = -1;
 #else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
@@ -1260,17 +1260,18 @@ static char __ACL_Type_doc__[] =
     ".. note:: only one keyword parameter should be provided\n"
     "\n"
     ":param string file: creates an ACL representing\n"
-    "    the access ACL of the specified file\n"
+    "    the access ACL of the specified file.\n"
     ":param string filedef: creates an ACL representing\n"
-    "    the default ACL of the given directory\n"
+    "    the default ACL of the given directory.\n"
     ":param int fd: creates an ACL representing\n"
-    "    the access ACL of the given file descriptor\n"
+    "    the access ACL of the given file descriptor.\n"
     ":param string text: creates an ACL from a \n"
-    "    textual description\n"
-    ":param ACL acl: creates a copy of an existing ACL instance\n"
+    "    textual description.\n"
+    ":param ACL acl: creates a copy of an existing ACL instance.\n"
     ":param int mode: creates an ACL from a numeric mode\n"
-    "    (e.g. mode=0644) (this is valid only when the C library\n"
-    "    provides the acl_from_mode call)\n"
+    "    (e.g. mode=0644); this is valid only when the C library\n"
+    "    provides the acl_from_mode call, and\n"
+    "    note that no validation is done on the given value.\n"
     "\n"
     "If no parameters are passed, an empty ACL will be created; this\n"
     "makes sense only when your OS supports ACL modification\n"

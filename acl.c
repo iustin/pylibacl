@@ -367,7 +367,8 @@ static PyObject* ACL_richcompare(PyObject* o1, PyObject* o2, int op) {
         ret = n == 1 ? Py_True : Py_False;
         break;
     default:
-        ret = Py_NotImplemented;
+        PyErr_SetString(PyExc_TypeError, "ACLs are not orderable");
+        return NULL;
     }
     Py_INCREF(ret);
     return ret;
@@ -395,12 +396,14 @@ static PyObject* ACL_equiv_mode(PyObject* obj, PyObject* args) {
 }
 #endif
 
+#ifndef IS_PY3K
 /* Implementation of the compare for ACLs */
 static int ACL_nocmp(PyObject* o1, PyObject* o2) {
 
     PyErr_SetString(PyExc_TypeError, "cannot compare ACLs using cmp()");
     return -1;
 }
+#endif
 
 /* Custom methods */
 static char __applyto_doc__[] =
@@ -1144,8 +1147,8 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     int nerr;
 
     if(!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_ValueError, "a maximum of one argument must"
-                        " be passed");
+        PyErr_SetString(PyExc_ValueError, "invalid argument, an integer"
+                        " is expected");
         return -1;
     }
     on = PyInt_AsLong(value);
@@ -1316,7 +1319,12 @@ static PyTypeObject ACL_Type = {
     0,                  /* tp_print */
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
+#ifdef IS_PY3K
+    0,                  /* formerly tp_compare, in 3.0 deprecated, in
+                           3.5 tp_as_async */
+#else
     ACL_nocmp,          /* tp_compare */
+#endif
     0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */

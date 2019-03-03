@@ -45,7 +45,6 @@
 #define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
 #define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
 #define PyInt_AS_LONG PyLong_AS_LONG
-#define MyString_ConcatAndDel PyUnicode_AppendAndDel
 #define MyString_FromFormat PyUnicode_FromFormat
 #define MyString_FromString PyUnicode_FromString
 #define MyString_FromStringAndSize PyUnicode_FromStringAndSize
@@ -55,8 +54,6 @@
 #define PyBytes_FromStringAndSize PyString_FromStringAndSize
 #define PyBytes_FromString PyString_FromString
 #define PyBytes_FromFormat PyString_FromFormat
-#define PyBytes_ConcatAndDel PyString_ConcatAndDel
-#define MyString_ConcatAndDel PyBytes_ConcatAndDel
 #define MyString_FromFormat PyBytes_FromFormat
 #define MyString_FromString PyBytes_FromString
 #define MyString_FromStringAndSize PyBytes_FromStringAndSize
@@ -836,8 +833,15 @@ static PyObject* Entry_str(PyObject *obj) {
         Py_DECREF(format);
         return NULL;
     }
-    MyString_ConcatAndDel(&format, kind);
+#ifdef IS_PY3K
+    PyObject *ret = PyUnicode_Concat(format, kind);
+    Py_DECREF(format);
+    Py_DECREF(kind);
+    return ret;
+#else
+    PyString_ConcatAndDel(&format, kind);
     return format;
+#endif
 }
 
 /* Sets the tag type of the entry */

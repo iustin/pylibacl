@@ -22,13 +22,19 @@ FreeBSD 7 also has quite good support. If any other platform
 implements the POSIX.1e draft, pylibacl can be used. I heard that
 Solaris does, but I can't test it.
 
-- Python 2.7 or newer
-- operating system:
+- Python 2.7 or newer.
+- Operating system:
     - Linux, kernel v2.4 or newer, and the libacl library and
       development packages (all modern distributions should have this,
       under various names); also the file-systems you use must have
-      ACLs turned on, either as a compile or mount option
-    - FreeBSD 7.0 or newer
+      ACLs turned on, either as a compile or mount option.
+    - FreeBSD 7.0 or newer.
+- The sphinx python module, for your python version, if building the
+  documentation.
+
+Note: to build from source, by default, Python 3 is needed. It can
+still be built with Python 2, by calling `make PYTHON=python2`.
+
 
 License
 -------

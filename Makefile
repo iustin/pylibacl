@@ -1,5 +1,6 @@
+PYTHON        = python3
 SPHINXOPTS    = -W
-SPHINXBUILD   = python3 -m sphinx
+SPHINXBUILD   = $(PYTHON) -m sphinx
 DOCDIR        = doc
 DOCHTML       = $(DOCDIR)/html
 DOCTREES      = $(DOCDIR)/doctrees
@@ -11,7 +12,7 @@ RSTFILES = doc/index.rst doc/module.rst NEWS README.rst doc/conf.py
 all: doc test
 
 $(MODNAME): acl.c
-	./setup.py build_ext --inplace
+	$(PYTHON) ./setup.py build_ext --inplace
 
 $(DOCHTML)/index.html: $(MODNAME) $(RSTFILES)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(DOCHTML)
@@ -20,7 +21,7 @@ $(DOCHTML)/index.html: $(MODNAME) $(RSTFILES)
 doc: $(DOCHTML)/index.html
 
 dist:
-	fakeroot ./setup.py sdist
+	fakeroot $(PYTHON) ./setup.py sdist
 
 test:
 	@for ver in 2.7 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7; do \

@@ -1,5 +1,5 @@
 SPHINXOPTS    = -W
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD   = python3 -m sphinx
 DOCDIR        = doc
 DOCHTML       = $(DOCDIR)/html
 DOCTREES      = $(DOCDIR)/doctrees

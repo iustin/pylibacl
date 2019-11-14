@@ -35,6 +35,19 @@ Solaris does, but I can't test it.
 Note: to build from source, by default, Python 3 is needed. It can
 still be built with Python 2, by calling `make PYTHON=python2`.
 
+FreeBSD
++++++++
+
+Note that on FreeBSD, ACLs are not enabled by default (at least on UFS
+file systems). To enable them, run `tunefs -a enabled` on the file
+system in question (after mounting it read-only). Then install:
+
+- pkg install py36-setuptools py36-sphinx
+
+or:
+
+- pkg install py37-setuptools
+
 
 License
 -------

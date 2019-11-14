@@ -5,10 +5,10 @@ This is a Python 2.7+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
 combinations.
 
-Downloads: go to http://pylibacl.k1024.org/downloads. Latest
-version is 0.5.3. The source repository is either
-at `<git://git.k1024.org/pylibacl.git>`_ or
-at https://github.com/iustin/pylibacl.
+Downloads: go to http://pylibacl.k1024.org/downloads. Latest version
+is 0.5.4. The source repository is either at
+https://git.k1024.org/pylibacl.git or at
+https://github.com/iustin/pylibacl.
 
 For any issues, please file bugs at
 https://github.com/iustin/pylibacl/issues.

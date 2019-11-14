@@ -1,6 +1,23 @@
 News
 ====
 
+Version 0.5.4
+-------------
+
+*released Thu, 14 Nov 2019*
+
+Maintenance release:
+
+- Switch build system to Python 3 by default (can be overridden if
+  needed).
+- Internal improvements for better cpychecker support.
+- Fix compatibility with PyPy.
+- Test improvements (both local and on Travis), testing more variations
+  (debug, PyPy).
+- Improve test coverage, and allow gathering test coverage results.
+- Drop support (well, drop testing) for Python lower than 2.7.
+- Minor documentation improvements (closes #9, #12).
+
 Version 0.5.3
 -------------
 

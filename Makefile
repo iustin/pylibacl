@@ -14,7 +14,7 @@ all: doc test
 $(MODNAME): acl.c
 	$(PYTHON) ./setup.py build_ext --inplace
 
-$(DOCHTML)/index.html: $(MODNAME) $(RSTFILES)
+$(DOCHTML)/index.html: $(MODNAME) $(RSTFILES) acl.c
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(DOCHTML)
 	touch $@
 

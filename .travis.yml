@@ -12,14 +12,30 @@ matrix:
     - python: "3.7"
       dist: xenial
 
-# we don't need any python dependencies:
-install: true
+# we don't need any python dependencies, but a ruby one for coverage:
+install: gem install coveralls-lcov
 
 # the test command:
-script: python ./setup.py test
+script:
+  - python ./setup.py test
+  - make clean
+  - CFLAGS="-coverage" python ./setup.py test
 
 # but we do need a system library:
 addons:
   apt:
     packages:
       - libacl1-dev
+      - lcov
+
+# coverage settings from here:
+
+env:
+  - COVERALLS_PARALLEL=true
+
+after_success:
+  - lcov --capture --no-external --directory . --output-file coverage.info
+  - coveralls-lcov coverage.info
+
+notifications:
+  webhooks: https://coveralls.io/webhook

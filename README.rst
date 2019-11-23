@@ -13,6 +13,20 @@ https://github.com/iustin/pylibacl.
 For any issues, please file bugs at
 https://github.com/iustin/pylibacl/issues.
 
+.. image:: https://img.shields.io/travis/iustin/pylibacl
+    :alt: Travis CI
+    :target: https://travis-ci.org/iustin/pylibacl
+.. image:: https://img.shields.io/coveralls/github/iustin/pylibacl
+    :alt: Coveralls coverage
+    :target: https://coveralls.io/github/iustin/pylibacl?branch=master
+.. image:: https://img.shields.io/github/release-date/iustin/pylibacl
+    :alt: GitHub Release Date
+.. image:: https://img.shields.io/pypi/v/pylibacl
+    :alt: PyPI
+    :target: https://pypi.org/project/pylibacl/
+.. image:: https://img.shields.io/pypi/dm/pylibacl
+    :alt: PyPI - Downloads
+
 Requirements
 ------------
 
@@ -42,11 +56,11 @@ Note that on FreeBSD, ACLs are not enabled by default (at least on UFS
 file systems). To enable them, run `tunefs -a enabled` on the file
 system in question (after mounting it read-only). Then install:
 
-- pkg install py36-setuptools py36-sphinx
+- `pkg install py36-setuptools py36-sphinx`
 
 or:
 
-- pkg install py37-setuptools
+- `pkg install py37-setuptools`
 
 
 License

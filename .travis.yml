@@ -5,12 +5,9 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8"
   - "nightly"
-
-matrix:
-  include:
-    - python: "3.7"
-      dist: xenial
 
 # we don't need any python dependencies, but a ruby one for coverage:
 install: gem install coveralls-lcov

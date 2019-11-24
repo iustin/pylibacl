@@ -24,6 +24,8 @@ https://github.com/iustin/pylibacl/issues.
 .. image:: https://img.shields.io/pypi/v/pylibacl
     :alt: PyPI
     :target: https://pypi.org/project/pylibacl/
+.. image:: https://img.shields.io/pypi/implementation/pylibacl
+    :alt: PyPI - Implementation
 .. image:: https://img.shields.io/pypi/dm/pylibacl
     :alt: PyPI - Downloads
 

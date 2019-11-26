@@ -50,6 +50,10 @@ test:
 	  fi; \
 	done
 
+fast-test:
+	python3 setup.py build_ext -i
+	python3 -m pytest tests -v
+
 coverage:
 	$(MAKE) clean
 	$(MAKE) test CFLAGS="-coverage"

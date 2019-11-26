@@ -45,4 +45,5 @@ setup(name="pylibacl",
                              define_macros=macros,
                              )],
       test_suite="tests",
+      python_requires = ">=3.4",
       )

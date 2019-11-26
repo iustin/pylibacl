@@ -1,7 +1,7 @@
 pylibacl
 ========
 
-This is a Python 2.7+ extension module allows you to manipulate the
+This is a Python 3.4+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
 combinations.
 
@@ -38,7 +38,7 @@ FreeBSD 7 also has quite good support. If any other platform
 implements the POSIX.1e draft, pylibacl can be used. I heard that
 Solaris does, but I can't test it.
 
-- Python 2.7 or newer.
+- Python 3.4 or newer. Python 2.4+ was supported in the 0.5.x branch.
 - Operating system:
     - Linux, kernel v2.4 or newer, and the libacl library and
       development packages (all modern distributions should have this,
@@ -47,9 +47,6 @@ Solaris does, but I can't test it.
     - FreeBSD 7.0 or newer.
 - The sphinx python module, for your python version, if building the
   documentation.
-
-Note: to build from source, by default, Python 3 is needed. It can
-still be built with Python 2, by calling `make PYTHON=python2`.
 
 FreeBSD
 +++++++

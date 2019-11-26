@@ -35,7 +35,8 @@ distcheck: dist
 	echo "All good, you can upload $(DISTFILE)!"
 
 test:
-	@for ver in 2.7 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8; do \
+	@set -e; \
+	for ver in 3.4 3.5 3.6 3.7 3.8; do \
 	  for flavour in "" "-dbg"; do \
 	    if type python$$ver$$flavour >/dev/null; then \
 	      echo Testing with python$$ver$$flavour; \

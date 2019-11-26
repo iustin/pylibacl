@@ -209,61 +209,63 @@ class aclTest:
         return fname
 
 
-class LoadTests(aclTest, unittest.TestCase):
+class TestLoad:
     """Load/create tests"""
-    def testFromFile(self):
+    def test_from_file(self, testdir):
         """Test loading ACLs from a file"""
-        _, fname = self._getfile()
+        _, fname = get_file(testdir)
         acl1 = posix1e.ACL(file=fname)
-        self.assertTrue(acl1.valid(), "ACL read from file should be valid")
+        assert acl1.valid()
 
-    def testFromDir(self):
+    def test_from_dir(self, testdir):
         """Test loading ACLs from a directory"""
-        dname = self._getdir()
-        acl1 = posix1e.ACL(file=dname)
-        acl2 = posix1e.ACL(filedef=dname)
-        self.assertTrue(acl1.valid(),
-                        "ACL read from directory should be valid")
+        with get_dir(testdir) as dname:
+          acl1 = posix1e.ACL(file=dname)
+          acl2 = posix1e.ACL(filedef=dname)
+          assert acl1.valid()
         # default ACLs might or might not be valid; missing ones are
         # not valid, so we don't test acl2 for validity
 
-    def testFromFd(self):
+    def test_from_fd(self, testdir):
         """Test loading ACLs from a file descriptor"""
-        fd, _ = self._getfile()
+        fd, _ = get_file(testdir)
         acl1 = posix1e.ACL(fd=fd)
-        self.assertTrue(acl1.valid(), "ACL read from fd should be valid")
+        assert acl1.valid()
 
-    def testFromEmpty(self):
+    def test_from_empty_invalid(self):
         """Test creating an empty ACL"""
         acl1 = posix1e.ACL()
-        self.assertFalse(acl1.valid(), "Empty ACL should not be valid")
+        assert not acl1.valid()
 
-    def testFromText(self):
+    def test_from_text(self):
         """Test creating an ACL from text"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl1.valid(),
-                        "ACL based on standard description should be valid")
+        assert acl1.valid()
 
-    def testFromACL(self):
+    def test_from_acl(self):
         """Test creating an ACL from an existing ACL"""
         acl1 = posix1e.ACL()
         acl2 = posix1e.ACL(acl=acl1)
+        assert acl1 == acl2
 
-    def testInvalidCreationParams(self):
+    def test_invalid_creation_params(self, testdir):
         """Test that creating an ACL from multiple objects fails"""
-        fd, _ = self._getfile()
-        self.assertRaises(ValueError, posix1e.ACL, text=BASIC_ACL_TEXT, fd=fd)
+        fd, _ = get_file(testdir)
+        with pytest.raises(ValueError):
+          posix1e.ACL(text=BASIC_ACL_TEXT, fd=fd)
 
-    def testInvalidValueCreation(self):
+    def test_invalid_value_creation(self):
         """Test that creating an ACL from wrong specification fails"""
-        self.assertRaises(EnvironmentError, posix1e.ACL, text="foobar")
-        self.assertRaises(TypeError, posix1e.ACL, foo="bar")
+        with pytest.raises(EnvironmentError):
+          posix1e.ACL(text="foobar")
+        with pytest.raises(TypeError):
+          posix1e.ACL(foo="bar")
 
-    def testDoubleInit(self):
+    def test_double_init(self):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl1.valid())
+        assert acl1.valid()
         acl1.__init__(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl1.valid())
+        assert acl1.valid()
 
 class AclExtensions(aclTest, unittest.TestCase):
     """ACL extensions checks"""

@@ -5,6 +5,9 @@ DOCDIR        = doc
 DOCHTML       = $(DOCDIR)/html
 DOCTREES      = $(DOCDIR)/doctrees
 ALLSPHINXOPTS = -d $(DOCTREES) $(SPHINXOPTS) $(DOCDIR)
+VERSION       = 0.5.4
+FULLVER       = pylibacl-$(VERSION)
+DISTFILE      = $(FULLVER).tar.gz
 
 MODNAME = posix1e.so
 RSTFILES = doc/index.rst doc/module.rst NEWS README.rst doc/conf.py
@@ -22,6 +25,14 @@ doc: $(DOCHTML)/index.html
 
 dist:
 	fakeroot $(PYTHON) ./setup.py sdist
+
+distcheck: dist
+	set -e; \
+	TDIR=$$(mktemp -d) && \
+	trap "rm -rf $$TDIR" EXIT; \
+	tar xzf dist/$(DISTFILE) -C $$TDIR && \
+	(cd $$TDIR/$(FULLVER) && make doc && make test && make dist) && \
+	echo "All good, you can upload $(DISTFILE)!"
 
 test:
 	@for ver in 2.7 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7; do \

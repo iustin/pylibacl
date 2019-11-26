@@ -173,6 +173,12 @@ NOT_BEFORE_36 = pytest.mark.xfail(condition="sys.version_info < (3,6)",
 NOT_PYPY = pytest.mark.xfail(condition="platform.python_implementation() == 'PyPy'",
                                   strict=False)
 
+require_acl_from_mode = pytest.mark.skipif("not HAS_ACL_FROM_MODE")
+require_acl_check = pytest.mark.skipif("not HAS_ACL_CHECK")
+require_acl_entry = pytest.mark.skipif("not HAS_ACL_ENTRY")
+require_extended_check = pytest.mark.skipif("not HAS_EXTENDED_CHECK")
+require_equiv_mode = pytest.mark.skipif("not HAS_EQUIV_MODE")
+
 class aclTest:
     """Support functions ACLs"""
 
@@ -267,102 +273,106 @@ class TestLoad:
         acl1.__init__(text=BASIC_ACL_TEXT)
         assert acl1.valid()
 
-class AclExtensions(aclTest, unittest.TestCase):
+class TestAclExtensions:
     """ACL extensions checks"""
 
-    @unittest.skipUnless(HAS_ACL_FROM_MODE, "Missing HAS_ACL_FROM_MODE")
-    def testFromMode(self):
+    @require_acl_from_mode
+    def test_from_mode(self):
         """Test loading ACLs from an octal mode"""
         acl1 = posix1e.ACL(mode=M0644)
-        self.assertTrue(acl1.valid(),
-                        "ACL created via octal mode shoule be valid")
+        assert acl1.valid()
 
-    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
-    def testAclCheck(self):
+    @require_acl_check
+    def test_acl_check(self):
         """Test the acl_check method"""
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertFalse(acl1.check(), "ACL is not valid")
+        assert not acl1.check()
         acl2 = posix1e.ACL()
-        self.assertTrue(acl2.check(), "Empty ACL should not be valid")
+        assert acl2.check()
 
-    @unittest.skipUnless(HAS_EXTENDED_CHECK, "Extended ACL check not supported")
-    def testExtended(self):
+    @require_extended_check
+    def test_extended(self, testdir):
         """Test the acl_extended function"""
-        fd, fname = self._getfile()
+        fd, fname = get_file(testdir)
         basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         basic_acl.applyto(fd)
         for item in fd, fname:
-            self.assertFalse(has_extended(item),
-                             "A simple ACL should not be reported as extended")
+            assert not has_extended(item)
         enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
-        self.assertTrue(enhanced_acl.valid(),
-                        "Failure to build an extended ACL")
+        assert enhanced_acl.valid()
         enhanced_acl.applyto(fd)
         for item in fd, fname:
-            self.assertTrue(has_extended(item),
-                            "An extended ACL should be reported as such")
+            assert has_extended(item)
 
-    @unittest.skipUnless(HAS_EXTENDED_CHECK, "Extended ACL check not supported")
-    def testExtendedArgHandling(self):
-      self.assertRaises(TypeError, has_extended)
-      self.assertRaises(TypeError, has_extended, object())
+    @require_extended_check
+    def test_extended_arg_handling(self):
+      with pytest.raises(TypeError):
+        has_extended()
+      with pytest.raises(TypeError):
+        has_extended(object())
 
-    @unittest.skipUnless(HAS_EQUIV_MODE, "equiv_mode not supported")
-    def testEquivMode(self):
+    @require_equiv_mode
+    def test_equiv_mode(self):
         """Test the equiv_mode function"""
         if HAS_ACL_FROM_MODE:
             for mode in M0644, M0755:
                 acl = posix1e.ACL(mode=mode)
-                self.assertEqual(acl.equiv_mode(), mode)
+                assert acl.equiv_mode() == mode
         acl = posix1e.ACL(text="u::rw,g::r,o::r")
-        self.assertEqual(acl.equiv_mode(), M0644)
+        assert acl.equiv_mode() == 0o644
         acl = posix1e.ACL(text="u::rx,g::-,o::-")
-        self.assertEqual(acl.equiv_mode(), M0500)
+        assert acl.equiv_mode() == 0o500
 
-    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
-    def testToAnyText(self):
+    @require_acl_check
+    def test_to_any_text(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertIn(encode("u::"),
-                          acl.to_any_text(options=posix1e.TEXT_ABBREVIATE))
-        self.assertIn(encode("user::"), acl.to_any_text())
+        assert encode("u::") in \
+          acl.to_any_text(options=posix1e.TEXT_ABBREVIATE)
+        assert encode("user::") in acl.to_any_text()
 
-    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
-    def testToAnyTextWrongArgs(self):
+    @require_acl_check
+    def test_to_any_text_wrong_args(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertRaises(TypeError, acl.to_any_text, foo="bar")
+        with pytest.raises(TypeError):
+          acl.to_any_text(foo="bar")
 
 
-    @unittest.skipUnless(HAS_ACL_CHECK, "ACL check not supported")
-    def testRichCompare(self):
+    @require_acl_check
+    def test_rich_compare(self):
         acl1 = posix1e.ACL(text="u::rw,g::r,o::r")
         acl2 = posix1e.ACL(acl=acl1)
         acl3 = posix1e.ACL(text="u::rw,g::rw,o::r")
-        self.assertEqual(acl1, acl2)
-        self.assertNotEqual(acl1, acl3)
-        self.assertRaises(TypeError, operator.lt, acl1, acl2)
-        self.assertRaises(TypeError, operator.ge, acl1, acl3)
-        self.assertTrue(acl1 != True)
-        self.assertFalse(acl1 == 1)
-        self.assertRaises(TypeError, operator.gt, acl1, True)
+        assert acl1 == acl2
+        assert acl1 != acl3
+        with pytest.raises(TypeError):
+          acl1 < acl2
+        with pytest.raises(TypeError):
+          acl1 >= acl3
+        assert acl1 != True
+        assert not (acl1 == 1)
+        with pytest.raises(TypeError):
+          acl1 > True
 
-    @unittest.skipUnless(hasattr(posix1e.ACL, "__cmp__"), "__cmp__ is missing")
-    @unittest.skipUnless(__pypy__ is None, "Disabled under pypy")
-    def testCmp(self):
+    @pytest.mark.skipif(not hasattr(posix1e.ACL, "__cmp__"), reason="__cmp__ is missing")
+    @pytest.mark.skipif(__pypy__ is not None, reason="Disabled under pypy")
+    def test_cmp(self):
         acl1 = posix1e.ACL()
-        self.assertRaises(TypeError, acl1.__cmp__, acl1)
+        with pytest.raises(TypeError):
+          acl1.__cmp__(acl1)
 
-    def testApplyToWithWrongObject(self):
+    def test_apply_to_with_wrong_object(self):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl1.valid())
-        self.assertRaises(TypeError, acl1.applyto, object())
-        self.assertRaises(TypeError, acl1.applyto, object(), object())
+        assert acl1.valid()
+        with pytest.raises(TypeError):
+          acl1.applyto(object())
+        with pytest.raises(TypeError):
+          acl1.applyto(object(), object())
 
-    @unittest.skipUnless(HAS_ACL_ENTRY, "ACL entries not supported")
-    def testAclIterator(self):
+    @require_acl_entry
+    def test_acl_iterator(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        #self.assertEqual(len(acl), 3)
         for entry in acl:
-            self.assertIs(entry.parent, acl)
+            assert entry.parent is acl
 
 
 class TestWrite:

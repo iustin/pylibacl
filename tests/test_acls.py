@@ -29,6 +29,8 @@ import platform
 import re
 import errno
 import operator
+import pytest
+import contextlib
 
 import posix1e
 from posix1e import *
@@ -59,6 +61,8 @@ PERMSETS = {
 # Check if running under Python 3
 IS_PY_3K = sys.hexversion >= 0x03000000
 
+# Fixtures and helpers
+
 def ignore_ioerror(errnum, fn, *args, **kwargs):
     """Call a function while ignoring some IOErrors.
 
@@ -81,6 +85,93 @@ def encode(s):
     else:
         return s
 
+@pytest.fixture
+def testdir():
+    """per-test temp dir based in TEST_DIR"""
+    with tempfile.TemporaryDirectory(dir=TEST_DIR) as dname:
+        yield dname
+
+def get_file(path):
+    fh, fname = tempfile.mkstemp(".test", "xattr-", path)
+    return fh, fname
+
+@contextlib.contextmanager
+def get_file_name(path):
+    fh, fname = get_file(path)
+    os.close(fh)
+    yield fname
+
+@contextlib.contextmanager
+def get_file_fd(path):
+    fd = get_file(path)[0]
+    yield fd
+    os.close(fd)
+
+@contextlib.contextmanager
+def get_file_object(path):
+    fd = get_file(path)[0]
+    with os.fdopen(fd) as f:
+        yield f
+
+@contextlib.contextmanager
+def get_dir(path):
+    yield tempfile.mkdtemp(".test", "xattr-", path)
+
+def get_symlink(path, dangling=True):
+    """create a symlink"""
+    fh, fname = get_file(path)
+    os.close(fh)
+    if dangling:
+        os.unlink(fname)
+    sname = fname + ".symlink"
+    os.symlink(fname, sname)
+    return fname, sname
+
+@contextlib.contextmanager
+def get_valid_symlink(path):
+    yield get_symlink(path, dangling=False)[1]
+
+@contextlib.contextmanager
+def get_dangling_symlink(path):
+    yield get_symlink(path, dangling=True)[1]
+
+@contextlib.contextmanager
+def get_file_and_symlink(path):
+    yield get_symlink(path, dangling=False)
+
+@contextlib.contextmanager
+def get_file_and_fobject(path):
+    fh, fname = get_file(path)
+    with os.fdopen(fh) as fo:
+        yield fname, fo
+
+# Wrappers that build upon existing values
+
+def as_wrapper(call, fn, closer=None):
+    @contextlib.contextmanager
+    def f(path):
+        with call(path) as r:
+            val = fn(r)
+            yield val
+            if closer is not None:
+                closer(val)
+    return f
+
+def as_bytes(call):
+    return as_wrapper(call, lambda r: r.encode())
+
+def as_fspath(call):
+    return as_wrapper(call, pathlib.PurePath)
+
+def as_iostream(call):
+    opener = lambda f: io.open(f, "r")
+    closer = lambda r: r.close()
+    return as_wrapper(call, opener, closer)
+
+NOT_BEFORE_36 = pytest.mark.xfail(condition="sys.version_info < (3,6)",
+                                  strict=True)
+NOT_PYPY = pytest.mark.xfail(condition="platform.python_implementation() == 'PyPy'",
+                                  strict=False)
 
 class aclTest:
     """Support functions ACLs"""

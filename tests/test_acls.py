@@ -365,27 +365,28 @@ class AclExtensions(aclTest, unittest.TestCase):
             self.assertIs(entry.parent, acl)
 
 
-class WriteTests(aclTest, unittest.TestCase):
+class TestWrite:
     """Write tests"""
 
-    def testDeleteDefault(self):
+    def test_delete_default(self, testdir):
         """Test removing the default ACL"""
-        dname = self._getdir()
-        posix1e.delete_default(dname)
+        with get_dir(testdir) as dname:
+          posix1e.delete_default(dname)
 
-    @unittest.skipUnless(__pypy__ is None, "Disabled under pypy")
-    def testDeleteDefaultWrongArg(self):
-        self.assertRaises(TypeError, posix1e.delete_default, object())
+    @pytest.mark.skipif(__pypy__, reason="Disabled under pypy")
+    def test_delete_default_wrong_arg(self):
+        with pytest.raises(TypeError):
+          posix1e.delete_default(object())
 
-    def testReapply(self):
+    def test_reapply(self, testdir):
         """Test re-applying an ACL"""
-        fd, fname = self._getfile()
+        fd, fname = get_file(testdir)
         acl1 = posix1e.ACL(fd=fd)
         acl1.applyto(fd)
         acl1.applyto(fname)
-        dname = self._getdir()
-        acl2 = posix1e.ACL(file=fname)
-        acl2.applyto(dname)
+        with get_dir(testdir) as dname:
+          acl2 = posix1e.ACL(file=fname)
+          acl2.applyto(dname)
 
 
 @unittest.skipUnless(HAS_ACL_ENTRY, "ACL entries not supported")

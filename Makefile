@@ -40,14 +40,16 @@ test:
 	  for flavour in "" "-dbg"; do \
 	    if type python$$ver$$flavour >/dev/null; then \
 	      echo Testing with python$$ver$$flavour; \
-	      python$$ver$$flavour ./setup.py test -q; \
+	      python$$ver$$flavour ./setup.py build_ext -i; \
+	      python$$ver$$flavour -m pytest tests ;\
 	    fi; \
 	  done; \
 	done; \
 	for pp in pypy pypy3; do \
 	  if type $$pp >/dev/null; then \
 	    echo Testing with $$pp; \
-	    $$pp ./setup.py test -q; \
+	    $$pp ./setup.py build_ext -i; \
+	    $$pp -m pytest tests; \
 	  fi; \
 	done
 

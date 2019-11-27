@@ -35,11 +35,6 @@ import contextlib
 import posix1e
 from posix1e import *
 
-try:
-  import __pypy__
-except ImportError:
-  __pypy__ = None
-
 TEST_DIR = os.environ.get("TEST_DIR", ".")
 
 BASIC_ACL_TEXT = "u::rw,g::r,o::-"
@@ -354,7 +349,7 @@ class TestAclExtensions:
           acl1 > True
 
     @pytest.mark.skipif(not hasattr(posix1e.ACL, "__cmp__"), reason="__cmp__ is missing")
-    @pytest.mark.skipif(__pypy__ is not None, reason="Disabled under pypy")
+    @NOT_PYPY
     def test_cmp(self):
         acl1 = posix1e.ACL()
         with pytest.raises(TypeError):
@@ -383,7 +378,7 @@ class TestWrite:
         with get_dir(testdir) as dname:
           posix1e.delete_default(dname)
 
-    @pytest.mark.skipif(__pypy__, reason="Disabled under pypy")
+    @NOT_PYPY
     def test_delete_default_wrong_arg(self):
         with pytest.raises(TypeError):
           posix1e.delete_default(object())

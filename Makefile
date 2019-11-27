@@ -57,6 +57,11 @@ fast-test:
 	python3 setup.py build_ext -i
 	python3 -m pytest tests -v
 
+ci:
+	while inotifywait -e CLOSE_WRITE tests/test_*.py; do \
+	  python3 -m pytest tests; \
+	done
+
 coverage:
 	$(MAKE) clean
 	$(MAKE) test CFLAGS="-coverage"
@@ -69,4 +74,4 @@ clean:
 	rm -f *.so
 	rm -rf build
 
-.PHONY: doc test clean dist coverage
+.PHONY: doc test clean dist coverage ci

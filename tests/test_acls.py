@@ -31,6 +31,8 @@ import errno
 import operator
 import pytest
 import contextlib
+import pathlib
+import io
 
 import posix1e
 from posix1e import *
@@ -168,6 +170,66 @@ require_acl_check = pytest.mark.skipif("not HAS_ACL_CHECK")
 require_acl_entry = pytest.mark.skipif("not HAS_ACL_ENTRY")
 require_extended_check = pytest.mark.skipif("not HAS_EXTENDED_CHECK")
 require_equiv_mode = pytest.mark.skipif("not HAS_EQUIV_MODE")
+
+# Note: ACLs are valid only for files/directories, not symbolic links
+# themselves, so we only create valid symlinks.
+FILE_P = [
+    get_file_name,
+    as_bytes(get_file_name),
+    pytest.param(as_fspath(get_file_name),
+                 marks=[NOT_BEFORE_36, NOT_PYPY]),
+    get_dir,
+    as_bytes(get_dir),
+    pytest.param(as_fspath(get_dir),
+                 marks=[NOT_BEFORE_36, NOT_PYPY]),
+    get_valid_symlink,
+    as_bytes(get_valid_symlink),
+    pytest.param(as_fspath(get_valid_symlink),
+                 marks=[NOT_BEFORE_36, NOT_PYPY]),
+]
+
+FILE_D = [
+    "file name",
+    "file name (bytes)",
+    "file name (path)",
+    "directory",
+    "directory (bytes)",
+    "directory (path)",
+    "file via symlink",
+    "file via symlink (bytes)",
+    "file via symlink (path)",
+]
+
+FD_P = [
+    get_file_fd,
+    get_file_object,
+    as_iostream(get_file_name),
+]
+
+FD_D = [
+    "file FD",
+    "file object",
+    "file io stream",
+]
+
+ALL_P = FILE_P + FD_P
+ALL_D = FILE_D + FD_D
+
+@pytest.fixture(params=FILE_P, ids=FILE_D)
+def file_subject(testdir, request):
+    with request.param(testdir) as value:
+        yield value
+
+@pytest.fixture(params=FD_P, ids=FD_D)
+def fd_subject(testdir, request):
+    with request.param(testdir) as value:
+        yield value
+
+@pytest.fixture(params=ALL_P, ids=ALL_D)
+def subject(testdir, request):
+    with request.param(testdir) as value:
+        yield value
+
 
 class TestLoad:
     """Load/create tests"""

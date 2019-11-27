@@ -65,7 +65,7 @@ ci:
 coverage:
 	$(MAKE) clean
 	$(MAKE) test CFLAGS="-coverage"
-	lcov --capture --directory . --output-file coverage.info
+	lcov --capture --no-external --directory . --output-file coverage.info
 	genhtml coverage.info --output-directory out
 
 clean:

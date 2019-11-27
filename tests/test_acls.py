@@ -52,14 +52,17 @@ PERMSETS = {
   posix1e.ACL_EXECUTE: ("execute", posix1e.Permset.execute),
   }
 
-ALL_TAG_TYPES = [
-  posix1e.ACL_USER,
-  posix1e.ACL_GROUP,
-  posix1e.ACL_USER_OBJ,
-  posix1e.ACL_GROUP_OBJ,
-  posix1e.ACL_MASK,
-  posix1e.ACL_OTHER,
+ALL_TAGS = [
+  (posix1e.ACL_USER, "user"),
+  (posix1e.ACL_GROUP, "group"),
+  (posix1e.ACL_USER_OBJ, "user object"),
+  (posix1e.ACL_GROUP_OBJ, "group object"),
+  (posix1e.ACL_MASK, "mask"),
+  (posix1e.ACL_OTHER, "other"),
 ]
+
+ALL_TAG_VALUES = [i[0] for i in ALL_TAGS]
+ALL_TAG_DESCS = [i[1] for i in ALL_TAGS]
 
 # Check if running under Python 3
 IS_PY_3K = sys.hexversion >= 0x03000000
@@ -704,7 +707,7 @@ class TestModification:
         with pytest.raises(TypeError):
           e.qualifier
 
-    @pytest.mark.parametrize("tag", ALL_TAG_TYPES)
+    @pytest.mark.parametrize("tag", ALL_TAG_VALUES, ids=ALL_TAG_DESCS)
     def test_tag_types(self, tag):
         """Tests tag type correct set/get"""
         acl = posix1e.ACL()
@@ -712,6 +715,19 @@ class TestModification:
         e.tag_type = tag
         assert e.tag_type == tag
         # check we can show all tag types without breaking
+        assert str(e)
+
+    @pytest.mark.parametrize("src_tag", ALL_TAG_VALUES, ids=ALL_TAG_DESCS)
+    @pytest.mark.parametrize("dst_tag", ALL_TAG_VALUES, ids=ALL_TAG_DESCS)
+    def test_tag_overwrite(self, src_tag, dst_tag):
+        """Tests tag type correct set/get"""
+        acl = posix1e.ACL()
+        e = acl.append()
+        e.tag_type = src_tag
+        assert e.tag_type == src_tag
+        assert str(e)
+        e.tag_type = dst_tag
+        assert e.tag_type == dst_tag
         assert str(e)
 
     def test_invalid_tags(self):
@@ -725,8 +741,11 @@ class TestModification:
         with pytest.raises((TypeError, AttributeError)):
           del e.tag_type
 
+    def test_tag_wrong_overwrite(self):
+        acl = posix1e.ACL()
+        e = acl.append()
         e.tag_type = posix1e.ACL_USER_OBJ
-        tag = max(ALL_TAG_TYPES) + 1
+        tag = max(ALL_TAG_VALUES) + 1
         with pytest.raises(EnvironmentError):
           e.tag_type = tag
         # Check tag is still valid.

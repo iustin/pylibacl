@@ -45,7 +45,7 @@ test:
 	    fi; \
 	  done; \
 	done; \
-	for pp in pypy pypy3; do \
+	for pp in pypy3; do \
 	  if type $$pp >/dev/null; then \
 	    echo Testing with $$pp; \
 	    $$pp ./setup.py build_ext -i; \

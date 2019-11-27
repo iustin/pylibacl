@@ -254,6 +254,17 @@ class TestLoad:
         acl1 = posix1e.ACL(fd=fd)
         assert acl1.valid()
 
+    def test_from_nonexisting(self, testdir):
+        _, fname = get_file(testdir)
+        with pytest.raises(IOError):
+            posix1e.ACL(file="fname"+".no-such-file")
+
+    def test_from_invalid_fd(self, testdir):
+        fd, _ = get_file(testdir)
+        os.close(fd)
+        with pytest.raises(IOError):
+            posix1e.ACL(fd=fd)
+
     def test_from_empty_invalid(self):
         """Test creating an empty ACL"""
         acl1 = posix1e.ACL()
@@ -306,6 +317,34 @@ class TestAclExtensions:
         acl2 = posix1e.ACL()
         assert acl2.check()
 
+    def test_applyto(self, subject):
+        """Test the apply_to function"""
+        # TODO: add read/compare with before, once ACL can be init'ed
+        # from any source.
+        basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
+        basic_acl.applyto(subject)
+        enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
+        assert enhanced_acl.valid()
+        enhanced_acl.applyto(subject)
+
+    def test_apply_to_with_wrong_object(self):
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
+        assert acl1.valid()
+        with pytest.raises(TypeError):
+          acl1.applyto(object())
+        with pytest.raises(TypeError):
+          acl1.applyto(object(), object())
+
+    def test_apply_to_fail(self, testdir):
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
+        assert acl1.valid()
+        fd, fname = get_file(testdir)
+        os.close(fd)
+        with pytest.raises(IOError):
+          acl1.applyto(fd)
+        with pytest.raises(IOError, match="no-such-file"):
+          acl1.applyto(fname+".no-such-file")
+
     @require_extended_check
     def test_applyto_extended(self, subject):
         """Test the acl_extended function"""
@@ -332,6 +371,15 @@ class TestAclExtensions:
             enhanced_acl.applyto(b)
             for item in a, b:
                 assert has_extended(item)
+
+    @require_extended_check
+    def test_extended_fail(self, testdir):
+        fd, fname = get_file(testdir)
+        os.close(fd)
+        with pytest.raises(IOError):
+          has_extended(fd)
+        with pytest.raises(IOError, match="no-such-file"):
+          has_extended(fname+".no-such-file")
 
     @require_extended_check
     def test_extended_arg_handling(self):
@@ -381,14 +429,6 @@ class TestAclExtensions:
         assert not (acl1 == 1)
         with pytest.raises(TypeError):
           acl1 > True
-
-    def test_apply_to_with_wrong_object(self):
-        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
-        assert acl1.valid()
-        with pytest.raises(TypeError):
-          acl1.applyto(object())
-        with pytest.raises(TypeError):
-          acl1.applyto(object(), object())
 
     @require_acl_entry
     def test_acl_iterator(self):

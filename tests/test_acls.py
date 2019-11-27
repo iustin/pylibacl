@@ -39,12 +39,6 @@ TEST_DIR = os.environ.get("TEST_DIR", ".")
 
 BASIC_ACL_TEXT = "u::rw,g::r,o::-"
 
-# This is to workaround python 2/3 differences at syntactic level
-# (which can't be worked around via if's)
-M0500 = 320 # octal 0500
-M0644 = 420 # octal 0644
-M0755 = 493 # octal 755
-
 # Permset permission information
 PERMSETS = {
   posix1e.ACL_READ: ("read", posix1e.Permset.read),
@@ -64,9 +58,6 @@ ALL_TAGS = [
 ALL_TAG_VALUES = [i[0] for i in ALL_TAGS]
 ALL_TAG_DESCS = [i[1] for i in ALL_TAGS]
 
-# Check if running under Python 3
-IS_PY_3K = sys.hexversion >= 0x03000000
-
 # Fixtures and helpers
 
 def ignore_ioerror(errnum, fn, *args, **kwargs):
@@ -83,13 +74,6 @@ def ignore_ioerror(errnum, fn, *args, **kwargs):
         if err.errno == errnum:
             return
         raise
-
-def encode(s):
-    """Encode a string if needed (under Python 3)"""
-    if IS_PY_3K:
-        return s.encode()
-    else:
-        return s
 
 @pytest.fixture
 def testdir():
@@ -249,7 +233,7 @@ class TestAclExtensions:
     @require_acl_from_mode
     def test_from_mode(self):
         """Test loading ACLs from an octal mode"""
-        acl1 = posix1e.ACL(mode=M0644)
+        acl1 = posix1e.ACL(mode=0o644)
         assert acl1.valid()
 
     @require_acl_check
@@ -285,7 +269,7 @@ class TestAclExtensions:
     def test_equiv_mode(self):
         """Test the equiv_mode function"""
         if HAS_ACL_FROM_MODE:
-            for mode in M0644, M0755:
+            for mode in 0o644, 0o755:
                 acl = posix1e.ACL(mode=mode)
                 assert acl.equiv_mode() == mode
         acl = posix1e.ACL(text="u::rw,g::r,o::r")
@@ -296,9 +280,9 @@ class TestAclExtensions:
     @require_acl_check
     def test_to_any_text(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        assert encode("u::") in \
+        assert b"u::" in \
           acl.to_any_text(options=posix1e.TEXT_ABBREVIATE)
-        assert encode("user::") in acl.to_any_text()
+        assert b"user::" in acl.to_any_text()
 
     @require_acl_check
     def test_to_any_text_wrong_args(self):
@@ -322,13 +306,6 @@ class TestAclExtensions:
         assert not (acl1 == 1)
         with pytest.raises(TypeError):
           acl1 > True
-
-    @pytest.mark.skipif(not hasattr(posix1e.ACL, "__cmp__"), reason="__cmp__ is missing")
-    @NOT_PYPY
-    def test_cmp(self):
-        acl1 = posix1e.ACL()
-        with pytest.raises(TypeError):
-          acl1.__cmp__(acl1)
 
     def test_apply_to_with_wrong_object(self):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)

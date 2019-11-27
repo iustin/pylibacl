@@ -32,33 +32,6 @@
 #define get_perm acl_get_perm_np
 #endif
 
-#if PY_MAJOR_VERSION >= 3
-#define IS_PY3K
-#define PyInt_Check(op) PyLong_Check(op)
-#define PyInt_FromString PyLong_FromString
-#define PyInt_FromUnicode PyLong_FromUnicode
-#define PyInt_FromLong PyLong_FromLong
-#define PyInt_FromSize_t PyLong_FromSize_t
-#define PyInt_FromSsize_t PyLong_FromSsize_t
-#define PyInt_AsLong PyLong_AsLong
-#define PyInt_AsSsize_t PyLong_AsSsize_t
-#define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
-#define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
-#define PyInt_AS_LONG PyLong_AS_LONG
-#define MyString_FromFormat PyUnicode_FromFormat
-#define MyString_FromString PyUnicode_FromString
-#define MyString_FromStringAndSize PyUnicode_FromStringAndSize
-#else
-#define PyBytes_Check PyString_Check
-#define PyBytes_AS_STRING PyString_AS_STRING
-#define PyBytes_FromStringAndSize PyString_FromStringAndSize
-#define PyBytes_FromString PyString_FromString
-#define PyBytes_FromFormat PyString_FromFormat
-#define MyString_FromFormat PyBytes_FromFormat
-#define MyString_FromString PyBytes_FromString
-#define MyString_FromStringAndSize PyBytes_FromStringAndSize
-#endif
-
 /* Used for cpychecker: */
 /* The checker automatically defines this preprocessor name when creating
    the custom attribute: */
@@ -232,7 +205,7 @@ static PyObject* ACL_str(PyObject *obj) {
     if(text == NULL) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
-    ret = MyString_FromString(text);
+    ret = PyUnicode_FromString(text);
     if(acl_free(text) != 0) {
         Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -384,16 +357,7 @@ static PyObject* ACL_equiv_mode(PyObject* obj, PyObject* args) {
 
     if(acl_equiv_mode(self->acl, &mode) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
-    return PyInt_FromLong(mode);
-}
-#endif
-
-#ifndef IS_PY3K
-/* Implementation of the compare for ACLs */
-static int ACL_nocmp(PyObject* o1, PyObject* o2) {
-
-    PyErr_SetString(PyExc_TypeError, "cannot compare ACLs using cmp()");
-    return -1;
+    return PyLong_FromLong(mode);
 }
 #endif
 
@@ -796,52 +760,47 @@ static PyObject* Entry_str(PyObject *obj) {
         return NULL;
     }
 
-    format = MyString_FromString("ACL entry for ");
+    format = PyUnicode_FromString("ACL entry for ");
     if(format == NULL)
         return NULL;
     switch(tq.tag) {
     case ACL_UNDEFINED_TAG:
-        kind = MyString_FromString("undefined type");
+        kind = PyUnicode_FromString("undefined type");
         break;
     case ACL_USER_OBJ:
-        kind = MyString_FromString("the owner");
+        kind = PyUnicode_FromString("the owner");
         break;
     case ACL_GROUP_OBJ:
-        kind = MyString_FromString("the group");
+        kind = PyUnicode_FromString("the group");
         break;
     case ACL_OTHER:
-        kind = MyString_FromString("the others");
+        kind = PyUnicode_FromString("the others");
         break;
     case ACL_USER:
         /* FIXME: here and in the group case, we're formatting with
            unsigned, because there's no way to automatically determine
            the signed-ness of the types; on Linux(glibc) they're
            unsigned, so we'll go along with that */
-        kind = MyString_FromFormat("user with uid %u", tq.uid);
+        kind = PyUnicode_FromFormat("user with uid %u", tq.uid);
         break;
     case ACL_GROUP:
-        kind = MyString_FromFormat("group with gid %u", tq.gid);
+        kind = PyUnicode_FromFormat("group with gid %u", tq.gid);
         break;
     case ACL_MASK:
-        kind = MyString_FromString("the mask");
+        kind = PyUnicode_FromString("the mask");
         break;
     default:
-        kind = MyString_FromString("UNKNOWN_TAG_TYPE!");
+        kind = PyUnicode_FromString("UNKNOWN_TAG_TYPE!");
         break;
     }
     if (kind == NULL) {
         Py_DECREF(format);
         return NULL;
     }
-#ifdef IS_PY3K
     PyObject *ret = PyUnicode_Concat(format, kind);
     Py_DECREF(format);
     Py_DECREF(kind);
     return ret;
-#else
-    PyString_ConcatAndDel(&format, kind);
-    return format;
-#endif
 }
 
 /* Sets the tag type of the entry */
@@ -854,12 +813,12 @@ static int Entry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
         return -1;
     }
 
-    if(!PyInt_Check(value)) {
+    if(!PyLong_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
                         "tag type must be integer");
         return -1;
     }
-    if(acl_set_tag_type(self->entry, (acl_tag_t)PyInt_AsLong(value)) == -1) {
+    if(acl_set_tag_type(self->entry, (acl_tag_t)PyLong_AsLong(value)) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
     }
@@ -881,7 +840,7 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
         return NULL;
     }
 
-    return PyInt_FromLong(value);
+    return PyLong_FromLong(value);
 }
 
 /* Sets the qualifier (either uid_t or gid_t) for the entry,
@@ -901,12 +860,12 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
         return -1;
     }
 
-    if(!PyInt_Check(value)) {
+    if(!PyLong_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
                         "qualifier must be integer");
         return -1;
     }
-    if((uidgid = PyInt_AsLong(value)) == -1) {
+    if((uidgid = PyLong_AsLong(value)) == -1) {
         if(PyErr_Occurred() != NULL) {
             return -1;
         }
@@ -973,7 +932,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
                         " group tag");
         return NULL;
     }
-    return PyInt_FromLong(value);
+    return PyLong_FromLong(value);
 }
 
 /* Returns the parent ACL of the entry */
@@ -1111,7 +1070,7 @@ static PyObject* Permset_str(PyObject *obj) {
     pstr[0] = get_perm(self->permset, ACL_READ) ? 'r' : '-';
     pstr[1] = get_perm(self->permset, ACL_WRITE) ? 'w' : '-';
     pstr[2] = get_perm(self->permset, ACL_EXECUTE) ? 'x' : '-';
-    return MyString_FromStringAndSize(pstr, 3);
+    return PyUnicode_FromStringAndSize(pstr, 3);
 }
 
 static char __Permset_clear_doc__[] =
@@ -1145,12 +1104,12 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     int on;
     int nerr;
 
-    if(!PyInt_Check(value)) {
+    if(!PyLong_Check(value)) {
         PyErr_SetString(PyExc_ValueError, "invalid argument, an integer"
                         " is expected");
         return -1;
     }
-    on = PyInt_AsLong(value);
+    on = PyLong_AsLong(value);
     if(on)
         nerr = acl_add_perm(self->permset, *(acl_perm_t*)arg);
     else
@@ -1308,12 +1267,7 @@ static PyMethodDef ACL_methods[] = {
 
 /* The definition of the ACL Type */
 static PyTypeObject ACL_Type = {
-#ifdef IS_PY3K
     PyVarObject_HEAD_INIT(NULL, 0)
-#else
-    PyObject_HEAD_INIT(NULL)
-    0,
-#endif
     "posix1e.ACL",
     sizeof(ACL_Object),
     0,
@@ -1321,12 +1275,8 @@ static PyTypeObject ACL_Type = {
     0,                  /* tp_print */
     0,                  /* tp_getattr */
     0,                  /* tp_setattr */
-#ifdef IS_PY3K
     0,                  /* formerly tp_compare, in 3.0 deprecated, in
                            3.5 tp_as_async */
-#else
-    ACL_nocmp,          /* tp_compare */
-#endif
     0,                  /* tp_repr */
     0,                  /* tp_as_number */
     0,                  /* tp_as_sequence */
@@ -1435,12 +1385,7 @@ static char __Entry_Type_doc__[] =
     ;
 /* The definition of the Entry Type */
 static PyTypeObject Entry_Type = {
-#ifdef IS_PY3K
     PyVarObject_HEAD_INIT(NULL, 0)
-#else
-    PyObject_HEAD_INIT(NULL)
-    0,
-#endif
     "posix1e.Entry",
     sizeof(Entry_Object),
     0,
@@ -1547,12 +1492,7 @@ static char __Permset_Type_doc__[] =
 
 /* The definition of the Permset Type */
 static PyTypeObject Permset_Type = {
-#ifdef IS_PY3K
     PyVarObject_HEAD_INIT(NULL, 0)
-#else
-    PyObject_HEAD_INIT(NULL)
-    0,
-#endif
     "posix1e.Permset",
     sizeof(Permset_Object),
     0,
@@ -1777,8 +1717,6 @@ static char __posix1e_doc__[] =
     "\n"
     ;
 
-#ifdef IS_PY3K
-
 static struct PyModuleDef posix1emodule = {
     PyModuleDef_HEAD_INIT,
     "posix1e",
@@ -1787,49 +1725,37 @@ static struct PyModuleDef posix1emodule = {
     aclmodule_methods,
 };
 
-#define INITERROR return NULL
-
 PyMODINIT_FUNC
 PyInit_posix1e(void)
-
-#else
-#define INITERROR return
-
-void initposix1e(void)
-#endif
 {
     PyObject *m, *d;
 
     Py_TYPE(&ACL_Type) = &PyType_Type;
     if(PyType_Ready(&ACL_Type) < 0)
-        INITERROR;
+        return NULL;
 
 #ifdef HAVE_LEVEL2
     Py_TYPE(&Entry_Type) = &PyType_Type;
     if(PyType_Ready(&Entry_Type) < 0)
-        INITERROR;
+        return NULL;
 
     Py_TYPE(&Permset_Type) = &PyType_Type;
     if(PyType_Ready(&Permset_Type) < 0)
-        INITERROR;
+        return NULL;
 #endif
 
-#ifdef IS_PY3K
     m = PyModule_Create(&posix1emodule);
-#else
-    m = Py_InitModule3("posix1e", aclmodule_methods, __posix1e_doc__);
-#endif
     if (m==NULL)
-        INITERROR;
+        return NULL;
 
     d = PyModule_GetDict(m);
     if (d == NULL)
-        INITERROR;
+        return NULL;
 
     Py_INCREF(&ACL_Type);
     if (PyDict_SetItemString(d, "ACL",
                              (PyObject *) &ACL_Type) < 0)
-        INITERROR;
+        return NULL;
 
     /* 23.3.6 acl_type_t values */
     PyModule_AddIntConstant(m, "ACL_TYPE_ACCESS", ACL_TYPE_ACCESS);
@@ -1840,12 +1766,12 @@ void initposix1e(void)
     Py_INCREF(&Entry_Type);
     if (PyDict_SetItemString(d, "Entry",
                              (PyObject *) &Entry_Type) < 0)
-        INITERROR;
+        return NULL;
 
     Py_INCREF(&Permset_Type);
     if (PyDict_SetItemString(d, "Permset",
                              (PyObject *) &Permset_Type) < 0)
-        INITERROR;
+        return NULL;
 
     /* 23.2.2 acl_perm_t values */
     PyModule_AddIntConstant(m, "ACL_READ", ACL_READ);
@@ -1891,7 +1817,5 @@ void initposix1e(void)
     PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", LINUX_EXT_VAL);
     PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", LINUX_EXT_VAL);
 
-#ifdef IS_PY3K
     return m;
-#endif
 }

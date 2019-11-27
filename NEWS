@@ -1,6 +1,22 @@
 News
 ====
 
+Version 0.6.0
+-------------
+
+*unreleased*
+
+Major release removing Python 2 support. This allow both code cleanup
+and new features, such as:
+
+- Support for pathlib objects in `apply_to` and `has_extended`
+  functions.
+- Use of built-in C API functions for bytes/unicode/pathlib conversion
+  when dealing with file names, removing custom code (with the
+  associated benefits).
+
+Additionally, test suite has changed to `pytest`.
+
 Version 0.5.4
 -------------
 

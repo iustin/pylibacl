@@ -307,18 +307,31 @@ class TestAclExtensions:
         assert acl2.check()
 
     @require_extended_check
-    def test_extended(self, testdir):
+    def test_applyto_extended(self, subject):
         """Test the acl_extended function"""
-        fd, fname = get_file(testdir)
         basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        basic_acl.applyto(fd)
-        for item in fd, fname:
-            assert not has_extended(item)
+        basic_acl.applyto(subject)
+        assert not has_extended(subject)
         enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
         assert enhanced_acl.valid()
-        enhanced_acl.applyto(fd)
-        for item in fd, fname:
-            assert has_extended(item)
+        enhanced_acl.applyto(subject)
+        assert has_extended(subject)
+
+    @require_extended_check
+    @pytest.mark.parametrize(
+        "gen", [ get_file_and_symlink, get_file_and_fobject ])
+    def test_applyto_extended_mixed(self, testdir, gen):
+        """Test the acl_extended function"""
+        with gen(testdir) as (a, b):
+            basic_acl = posix1e.ACL(text=BASIC_ACL_TEXT)
+            basic_acl.applyto(a)
+            for item in a, b:
+                assert not has_extended(item)
+            enhanced_acl = posix1e.ACL(text="u::rw,g::-,o::-,u:root:rw,mask::r")
+            assert enhanced_acl.valid()
+            enhanced_acl.applyto(b)
+            for item in a, b:
+                assert has_extended(item)
 
     @require_extended_check
     def test_extended_arg_handling(self):

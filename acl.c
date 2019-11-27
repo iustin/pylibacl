@@ -375,40 +375,39 @@ static char __applyto_doc__[] =
 /* Applies the ACL to a file */
 static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
-    PyObject *myarg;
+    PyObject *target, *tmp;
     acl_type_t type = ACL_TYPE_ACCESS;
     int nret;
     int fd;
 
-    if (!PyArg_ParseTuple(args, "O|I", &myarg, &type))
+    if (!PyArg_ParseTuple(args, "O|I", &target, &type))
         return NULL;
-
-    if(PyBytes_Check(myarg)) {
-        char *filename = PyBytes_AS_STRING(myarg);
-        nret = acl_set_file(filename, type, self->acl);
-    } else if (PyUnicode_Check(myarg)) {
-        PyObject *o =
-            PyUnicode_AsEncodedString(myarg,
-                                      Py_FileSystemDefaultEncoding, "strict");
-        if (o == NULL)
-            return NULL;
-        const char *filename = PyBytes_AS_STRING(o);
-        nret = acl_set_file(filename, type, self->acl);
-        Py_DECREF(o);
-    } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
-        nret = acl_set_fd(fd, self->acl);
+    if ((fd = PyObject_AsFileDescriptor(target)) != -1) {
+        if((nret = acl_set_fd(fd, self->acl)) == -1) {
+          PyErr_SetFromErrno(PyExc_IOError);
+        }
     } else {
-        PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int,"
-                        " or file-like object");
-        return 0;
+      // PyObject_AsFileDescriptor sets an error when failing, so clear
+      // it such that further code works; some method lookups fail if an
+      // error already occured when called, which breaks at least
+      // PyOS_FSPath (called by FSConverter).
+      PyErr_Clear();
+      if(PyUnicode_FSConverter(target, &tmp)) {
+        char *filename = PyBytes_AS_STRING(tmp);
+        if ((nret = acl_set_file(filename, type, self->acl)) == -1) {
+            PyErr_SetFromErrnoWithFilename(PyExc_IOError, filename);
+        }
+        Py_DECREF(tmp);
+      } else {
+        nret = -1;
+      }
     }
-    if(nret == -1) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+    if (nret < 0) {
+        return NULL;
+    } else {
+        Py_INCREF(Py_None);
+        return Py_None;
     }
-
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
 }
 
 static char __valid_doc__[] =
@@ -1575,38 +1574,39 @@ static char __has_extended_doc__[] =
 
 /* Check for extended ACL a file or fd */
 static PyObject* aclmodule_has_extended(PyObject* obj, PyObject* args) {
-    PyObject *myarg;
+    PyObject *item, *tmp;
     int nret;
     int fd;
 
-    if (!PyArg_ParseTuple(args, "O", &myarg))
+    if (!PyArg_ParseTuple(args, "O", &item))
         return NULL;
 
-    if(PyBytes_Check(myarg)) {
-        const char *filename = PyBytes_AS_STRING(myarg);
-        nret = acl_extended_file(filename);
-    } else if (PyUnicode_Check(myarg)) {
-        PyObject *o =
-            PyUnicode_AsEncodedString(myarg,
-                                      Py_FileSystemDefaultEncoding, "strict");
-        if (o == NULL)
-            return NULL;
-        const char *filename = PyBytes_AS_STRING(o);
-        nret = acl_extended_file(filename);
-        Py_DECREF(o);
-    } else if((fd = PyObject_AsFileDescriptor(myarg)) != -1) {
-        nret = acl_extended_fd(fd);
+    if((fd = PyObject_AsFileDescriptor(item)) != -1) {
+        if((nret = acl_extended_fd(fd)) == -1) {
+            PyErr_SetFromErrno(PyExc_IOError);
+        }
     } else {
-        PyErr_SetString(PyExc_TypeError, "argument 1 must be string, int,"
-                        " or file-like object");
-        return 0;
-    }
-    if(nret == -1) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+      // PyObject_AsFileDescriptor sets an error when failing, so clear
+      // it such that further code works; some method lookups fail if an
+      // error already occured when called, which breaks at least
+      // PyOS_FSPath (called by FSConverter).
+      PyErr_Clear();
+      if(PyUnicode_FSConverter(item, &tmp)) {
+        char *filename = PyBytes_AS_STRING(tmp);
+        if ((nret = acl_extended_file(filename)) == -1) {
+            PyErr_SetFromErrnoWithFilename(PyExc_IOError, filename);
+        }
+        Py_DECREF(tmp);
+      } else {
+          nret = -1;
+      }
     }
 
-    /* Return the result */
-    return PyBool_FromLong(nret);
+    if (nret < 0) {
+        return NULL;
+    } else {
+        return PyBool_FromLong(nret);
+    }
 }
 #endif
 

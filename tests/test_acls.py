@@ -52,6 +52,14 @@ PERMSETS = {
   posix1e.ACL_EXECUTE: ("execute", posix1e.Permset.execute),
   }
 
+ALL_TAG_TYPES = [
+  posix1e.ACL_USER,
+  posix1e.ACL_GROUP,
+  posix1e.ACL_USER_OBJ,
+  posix1e.ACL_GROUP_OBJ,
+  posix1e.ACL_MASK,
+  posix1e.ACL_OTHER,
+]
 
 # Check if running under Python 3
 IS_PY_3K = sys.hexversion >= 0x03000000
@@ -173,42 +181,6 @@ require_acl_check = pytest.mark.skipif("not HAS_ACL_CHECK")
 require_acl_entry = pytest.mark.skipif("not HAS_ACL_ENTRY")
 require_extended_check = pytest.mark.skipif("not HAS_EXTENDED_CHECK")
 require_equiv_mode = pytest.mark.skipif("not HAS_EQUIV_MODE")
-
-class aclTest:
-    """Support functions ACLs"""
-
-    def setUp(self):
-        """set up function"""
-        self.rmfiles = []
-        self.rmdirs = []
-
-    def tearDown(self):
-        """tear down function"""
-        for fname in self.rmfiles:
-            os.unlink(fname)
-        for dname in self.rmdirs:
-            os.rmdir(dname)
-
-    def _getfile(self):
-        """create a temp file"""
-        fh, fname = tempfile.mkstemp(".test", "xattr-", TEST_DIR)
-        self.rmfiles.append(fname)
-        return fh, fname
-
-    def _getdir(self):
-        """create a temp dir"""
-        dname = tempfile.mkdtemp(".test", "xattr-", TEST_DIR)
-        self.rmdirs.append(dname)
-        return dname
-
-    def _getsymlink(self):
-        """create a symlink"""
-        fh, fname = self._getfile()
-        os.close(fh)
-        os.unlink(fname)
-        os.symlink(fname + ".non-existent", fname)
-        return fname
-
 
 class TestLoad:
     """Load/create tests"""
@@ -394,8 +366,9 @@ class TestWrite:
           acl2.applyto(dname)
 
 
-@unittest.skipUnless(HAS_ACL_ENTRY, "ACL entries not supported")
-class ModificationTests(aclTest, unittest.TestCase):
+
+@require_acl_entry
+class TestModification:
     """ACL modification tests"""
 
     def checkRef(self, obj):
@@ -407,16 +380,16 @@ class ModificationTests(aclTest, unittest.TestCase):
         # seen it overflow on bad reference counting, so it's better
         # to be safe
         if ref_cnt < 2 or ref_cnt > 1024:
-            self.fail("Wrong reference count, expected 2-1024 and got %d" %
-                      ref_cnt)
+            pytest.fail("Wrong reference count, expected 2-1024 and got %d" %
+                        ref_cnt)
 
-    def testStr(self):
+    def test_str(self):
         """Test str() of an ACL."""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         str_acl = str(acl)
         self.checkRef(str_acl)
 
-    def testAppend(self):
+    def test_append(self):
         """Test append a new Entry to the ACL"""
         acl = posix1e.ACL()
         e = acl.append()
@@ -426,26 +399,28 @@ class ModificationTests(aclTest, unittest.TestCase):
         self.checkRef(str_format)
         e2 = acl.append(e)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
-        self.assertFalse(acl.valid())
+        assert not acl.valid()
 
-    def testWrongAppend(self):
+    def test_wrong_append(self):
         """Test append a new Entry to the ACL based on wrong object type"""
         acl = posix1e.ACL()
-        self.assertRaises(TypeError, acl.append, object())
+        with pytest.raises(TypeError):
+          acl.append(object())
 
-    def testEntryCreation(self):
+    def test_entry_creation(self):
         acl = posix1e.ACL()
         e = posix1e.Entry(acl)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         str_format = str(e)
         self.checkRef(str_format)
 
-    def testEntryFailedCreation(self):
+    def test_entry_failed_creation(self):
         # Checks for partial initialisation and deletion on error
         # path.
-        self.assertRaises(TypeError, posix1e.Entry, object())
+        with pytest.raises(TypeError):
+          posix1e.Entry(object())
 
-    def testDelete(self):
+    def test_delete(self):
         """Test delete Entry from the ACL"""
         acl = posix1e.ACL()
         e = acl.append()
@@ -454,7 +429,7 @@ class ModificationTests(aclTest, unittest.TestCase):
         acl.delete_entry(e)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
 
-    def testDoubleDelete(self):
+    def test_double_delete(self):
         """Test delete Entry from the ACL"""
         # This is not entirely valid/correct, since the entry object
         # itself is invalid after the first deletion, so we're
@@ -466,10 +441,11 @@ class ModificationTests(aclTest, unittest.TestCase):
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         acl.delete_entry(e)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
-        self.assertRaises(EnvironmentError, acl.delete_entry, e)
+        with pytest.raises(EnvironmentError):
+          acl.delete_entry(e)
 
     # This currently fails as this deletion seems to be accepted :/
-    @unittest.skip("Entry deletion is unreliable")
+    @pytest.mark.xfail(reason="Entry deletion is unreliable")
     def testDeleteInvalidEntry(self):
         """Test delete foreign Entry from the ACL"""
         acl1 = posix1e.ACL()
@@ -477,31 +453,32 @@ class ModificationTests(aclTest, unittest.TestCase):
         e = acl1.append()
         e.tag_type = posix1e.ACL_OTHER
         ignore_ioerror(errno.EINVAL, acl1.calc_mask)
-        self.assertRaises(EnvironmentError, acl2.delete_entry, e)
+        with pytest.raises(EnvironmentError):
+          acl2.delete_entry(e)
 
-    def testDeleteInvalidObject(self):
+    def test_delete_invalid_object(self):
         """Test delete a non-Entry from the ACL"""
         acl = posix1e.ACL()
-        self.assertRaises(TypeError, acl.delete_entry, object())
+        with pytest.raises(TypeError):
+          acl.delete_entry(object())
 
-    def testDoubleEntries(self):
+    def test_double_entries(self):
         """Test double entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl.valid(), "ACL is not valid")
+        assert acl.valid()
         for tag_type in (posix1e.ACL_USER_OBJ, posix1e.ACL_GROUP_OBJ,
                          posix1e.ACL_OTHER):
             e = acl.append()
             e.tag_type = tag_type
             e.permset.clear()
-            self.assertFalse(acl.valid(),
-                "ACL containing duplicate entries"
-                " should not be valid")
+            assert not acl.valid(), ("ACL containing duplicate entries"
+                                     " should not be valid")
             acl.delete_entry(e)
 
-    def testMultipleGoodEntries(self):
+    def test_multiple_good_entries(self):
         """Test multiple valid entries"""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-        self.assertTrue(acl.valid(), "ACL is not valid")
+        assert acl.valid()
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
             for obj_id in range(5):
@@ -510,37 +487,35 @@ class ModificationTests(aclTest, unittest.TestCase):
                 e.qualifier = obj_id
                 e.permset.clear()
                 acl.calc_mask()
-                self.assertTrue(acl.valid(),
-                    "ACL should be able to hold multiple"
-                    " user/group entries")
+                assert acl.valid(), ("ACL should be able to hold multiple"
+                                     " user/group entries")
 
-    def testMultipleBadEntries(self):
+    def test_multiple_bad_entries(self):
         """Test multiple invalid entries"""
         for tag_type in (posix1e.ACL_USER,
                          posix1e.ACL_GROUP):
             acl = posix1e.ACL(text=BASIC_ACL_TEXT)
-            self.assertTrue(acl.valid(), "ACL built from standard description"
-                                         " should be valid")
+            assert acl.valid()
             e1 = acl.append()
             e1.tag_type = tag_type
             e1.qualifier = 0
             e1.permset.clear()
             acl.calc_mask()
-            self.assertTrue(acl.valid(), "ACL should be able to add a"
-                " user/group entry")
+            assert acl.valid(), ("ACL should be able to add a"
+                                 " user/group entry")
             e2 = acl.append()
             e2.tag_type = tag_type
             e2.qualifier = 0
             e2.permset.clear()
             ignore_ioerror(errno.EINVAL, acl.calc_mask)
-            self.assertFalse(acl.valid(), "ACL should not validate when"
-                " containing two duplicate entries")
+            assert not acl.valid(), ("ACL should not validate when"
+                                     " containing two duplicate entries")
             acl.delete_entry(e1)
             # FreeBSD trips over itself here and can't delete the
             # entry, even though it still exists.
             ignore_ioerror(errno.EINVAL, acl.delete_entry, e2)
 
-    def testCopy(self):
+    def test_copy(self):
         acl = ACL()
         e1 = acl.append()
         e1.tag_type = ACL_USER
@@ -553,17 +528,18 @@ class ModificationTests(aclTest, unittest.TestCase):
         p2 = e2.permset
         p2.clear()
         p2.read = True
-        self.assertFalse(p2.write)
+        assert not p2.write
         e2.copy(e1)
-        self.assertTrue(p2.write)
-        self.assertEqual(e1.tag_type, e2.tag_type)
+        assert p2.write
+        assert e1.tag_type == e2.tag_type
 
-    def testCopyWrongArg(self):
+    def test_copy_wrong_arg(self):
         acl = ACL()
         e = acl.append()
-        self.assertRaises(TypeError, e.copy, object())
+        with pytest.raises(TypeError):
+          e.copy(object())
 
-    def testSetPermset(self):
+    def test_set_permset(self):
         acl = ACL()
         e1 = acl.append()
         e1.tag_type = ACL_USER
@@ -576,29 +552,29 @@ class ModificationTests(aclTest, unittest.TestCase):
         p2 = e2.permset
         p2.clear()
         p2.read = True
-        self.assertFalse(p2.write)
+        assert not p2.write
         e2.permset = p1
-        self.assertTrue(e2.permset.write)
-        self.assertEqual(e2.tag_type, ACL_GROUP)
+        assert e2.permset.write
+        assert e2.tag_type == ACL_GROUP
 
-    def testSetPermsetWrongArg(self):
+    def test_set_permset_wrong_arg(self):
         acl = ACL()
         e = acl.append()
-        def setter(v):
-            e.permset = v
-        self.assertRaises(TypeError, setter, object())
+        with pytest.raises(TypeError):
+          e.permset = object()
 
-    def testPermsetCreation(self):
+    def test_permset_creation(self):
         acl = ACL()
         e = acl.append()
         p1 = e.permset
         p2 = Permset(e)
         #self.assertEqual(p1, p2)
 
-    def testPermsetCreationWrongArg(self):
-        self.assertRaises(TypeError, Permset, object())
+    def test_permset_creation_wrong_arg(self):
+        with pytest.raises(TypeError):
+          Permset(object())
 
-    def testPermset(self):
+    def test_permset(self):
         """Test permissions"""
         acl = posix1e.ACL()
         e = acl.append()
@@ -610,18 +586,18 @@ class ModificationTests(aclTest, unittest.TestCase):
             str_ps = str(ps)
             txt = PERMSETS[perm][0]
             self.checkRef(str_ps)
-            self.assertFalse(ps.test(perm), "Empty permission set should not"
-                " have permission '%s'" % txt)
+            assert not ps.test(perm), ("Empty permission set should not"
+                                       " have permission '%s'" % txt)
             ps.add(perm)
-            self.assertTrue(ps.test(perm), "Permission '%s' should exist"
-                " after addition" % txt)
+            assert ps.test(perm), ("Permission '%s' should exist"
+                                   " after addition" % txt)
             str_ps = str(ps)
             self.checkRef(str_ps)
             ps.delete(perm)
-            self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
-                " after deletion" % txt)
+            assert not ps.test(perm), ("Permission '%s' should not exist"
+                                       " after deletion" % txt)
 
-    def testPermsetViaAccessors(self):
+    def test_permset_via_accessors(self):
         """Test permissions"""
         acl = posix1e.ACL()
         e = acl.append()
@@ -637,43 +613,40 @@ class ModificationTests(aclTest, unittest.TestCase):
             str_ps = str(ps)
             self.checkRef(str_ps)
             txt = PERMSETS[perm][0]
-            self.assertFalse(getter(perm), "Empty permission set should not"
-                " have permission '%s'" % txt)
+            assert not getter(perm), ("Empty permission set should not"
+                                      " have permission '%s'" % txt)
             setter(perm, True)
-            self.assertTrue(ps.test(perm), "Permission '%s' should exist"
-                " after addition" % txt)
-            self.assertTrue(getter(perm), "Permission '%s' should exist"
-                " after addition" % txt)
+            assert ps.test(perm), ("Permission '%s' should exist"
+                                   " after addition" % txt)
+            assert getter(perm), ("Permission '%s' should exist"
+                                  " after addition" % txt)
             str_ps = str(ps)
             self.checkRef(str_ps)
             setter(perm, False)
-            self.assertFalse(ps.test(perm), "Permission '%s' should not exist"
-                " after deletion" % txt)
-            self.assertFalse(getter(perm), "Permission '%s' should not exist"
-                " after deletion" % txt)
+            assert not ps.test(perm), ("Permission '%s' should not exist"
+                                       " after deletion" % txt)
+            assert not getter(perm), ("Permission '%s' should not exist"
+                                      " after deletion" % txt)
 
-    def testPermsetInvalidType(self):
+    def test_permset_invalid_type(self):
         acl = posix1e.ACL()
         e = acl.append()
         ps = e.permset
         ps.clear()
-        def setter():
-            ps.write = object()
-        self.assertRaises(TypeError, ps.add, "foobar")
-        self.assertRaises(TypeError, ps.delete, "foobar")
-        self.assertRaises(TypeError, ps.test, "foobar")
-        self.assertRaises(ValueError, setter)
+        with pytest.raises(TypeError):
+          ps.add("foobar")
+        with pytest.raises(TypeError):
+          ps.delete("foobar")
+        with pytest.raises(TypeError):
+          ps.test("foobar")
+        with pytest.raises(ValueError):
+          ps.write = object()
 
-    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
-    def testQualifierValues(self):
+    def test_qualifier_values(self):
         """Tests qualifier correct store/retrieval"""
         acl = posix1e.ACL()
         e = acl.append()
         # work around deprecation warnings
-        if hasattr(self, 'assertRegex'):
-            fn = self.assertRegex
-        else:
-            fn = self.assertRegexpMatches
         for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
             qualifier = 1
             e.tag_type = tag
@@ -687,23 +660,21 @@ class ModificationTests(aclTest, unittest.TestCase):
                 except OverflowError:
                     # reached overflow condition, break
                     break
-                self.assertEqual(e.qualifier, qualifier)
-                fn(str(e), regex)
+                assert e.qualifier == qualifier
+                assert regex.search(str(e)) is not None
                 qualifier *= 2
 
-    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
-    def testQualifierOverflow(self):
+    def test_qualifier_overflow(self):
         """Tests qualifier overflow handling"""
         acl = posix1e.ACL()
         e = acl.append()
         qualifier = sys.maxsize * 2
         for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
             e.tag_type = tag
-            with self.assertRaises(OverflowError):
+            with pytest.raises(OverflowError):
                 e.qualifier = qualifier
 
-    @unittest.skipUnless(IS_PY_3K, "Only supported under Python 3")
-    def testNegativeQualifier(self):
+    def test_negative_qualifier(self):
         """Tests negative qualifier handling"""
         # Note: this presumes that uid_t/gid_t in C are unsigned...
         acl = posix1e.ACL()
@@ -711,64 +682,55 @@ class ModificationTests(aclTest, unittest.TestCase):
         for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
             e.tag_type = tag
             for qualifier in [-10, -5, -1]:
-                with self.assertRaises(OverflowError):
+                with pytest.raises(OverflowError):
                     e.qualifier = qualifier
 
-    def testInvalidQualifier(self):
+    def test_invalid_qualifier(self):
         """Tests invalid qualifier handling"""
         acl = posix1e.ACL()
         e = acl.append()
-        def set_qual(x):
-            e.qualifier = x
-        def del_qual():
-            del e.qualifier
-        self.assertRaises(TypeError, set_qual, object())
-        self.assertRaises((TypeError, AttributeError), del_qual)
+        with pytest.raises(TypeError):
+          e.qualifier = object()
+        with pytest.raises((TypeError, AttributeError)):
+          del e.qualifier
 
-    def testQualifierOnWrongTag(self):
+    def test_qualifier_on_wrong_tag(self):
         """Tests qualifier setting on wrong tag"""
         acl = posix1e.ACL()
         e = acl.append()
         e.tag_type = posix1e.ACL_OTHER
-        def set_qual(x):
-            e.qualifier = x
-        def get_qual():
-            return e.qualifier
-        self.assertRaises(TypeError, set_qual, 1)
-        self.assertRaises(TypeError, get_qual)
+        with pytest.raises(TypeError):
+          e.qualifier = 1
+        with pytest.raises(TypeError):
+          e.qualifier
 
-
-    def testTagTypes(self):
+    @pytest.mark.parametrize("tag", ALL_TAG_TYPES)
+    def test_tag_types(self, tag):
         """Tests tag type correct set/get"""
         acl = posix1e.ACL()
         e = acl.append()
-        for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP, posix1e.ACL_USER_OBJ,
-                    posix1e.ACL_GROUP_OBJ, posix1e.ACL_MASK,
-                    posix1e.ACL_OTHER]:
-            e.tag_type = tag
-            self.assertEqual(e.tag_type, tag)
-            # check we can show all tag types without breaking
-            self.assertTrue(str(e))
+        e.tag_type = tag
+        assert e.tag_type == tag
+        # check we can show all tag types without breaking
+        assert str(e)
 
-    def testInvalidTags(self):
+    def test_invalid_tags(self):
         """Tests tag type incorrect set/get"""
         acl = posix1e.ACL()
         e = acl.append()
-        def set_tag(x):
-          e.tag_type = x
-        self.assertRaises(TypeError, set_tag, object())
-        def delete_tag():
-          del e.tag_type
+        with pytest.raises(TypeError):
+          e.tag_type = object()
+        e.tag_type = posix1e.ACL_USER_OBJ
         # For some reason, PyPy raises AttributeError. Strange...
-        self.assertRaises((TypeError, AttributeError), delete_tag)
+        with pytest.raises((TypeError, AttributeError)):
+          del e.tag_type
 
         e.tag_type = posix1e.ACL_USER_OBJ
-        tag = max([posix1e.ACL_USER, posix1e.ACL_GROUP, posix1e.ACL_USER_OBJ,
-                   posix1e.ACL_GROUP_OBJ, posix1e.ACL_MASK,
-                   posix1e.ACL_OTHER]) + 1
-        self.assertRaises(EnvironmentError, set_tag, tag)
+        tag = max(ALL_TAG_TYPES) + 1
+        with pytest.raises(EnvironmentError):
+          e.tag_type = tag
         # Check tag is still valid.
-        self.assertEqual(e.tag_type, posix1e.ACL_USER_OBJ)
+        assert e.tag_type == posix1e.ACL_USER_OBJ
 
 if __name__ == "__main__":
     unittest.main()

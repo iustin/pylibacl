@@ -698,6 +698,13 @@ static int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
     return 0;
 }
 
+#define ENTRY_SET_CHECK(self, attr, value)         \
+    if (value == NULL) { \
+        PyErr_SetString(PyExc_TypeError, \
+                        attr " deletion is not supported"); \
+        return -1; \
+    }
+
 /* Creation of a new Entry instance */
 static PyObject* Entry_new(PyTypeObject* type, PyObject* args,
                            PyObject *keywds) {
@@ -806,11 +813,7 @@ static PyObject* Entry_str(PyObject *obj) {
 static int Entry_set_tag_type(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
 
-    if(value == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "tag type deletion is not supported");
-        return -1;
-    }
+    ENTRY_SET_CHECK(self, "tag type", value);
 
     if(!PyLong_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
@@ -853,11 +856,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     void *p;
     acl_tag_t tag;
 
-    if(value == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "qualifier deletion is not supported");
-        return -1;
-    }
+    ENTRY_SET_CHECK(self, "qualifier", value);
 
     if(!PyLong_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
@@ -970,6 +969,8 @@ static PyObject* Entry_get_permset(PyObject *obj, void* arg) {
 static int Entry_set_permset(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*)obj;
     Permset_Object *p;
+
+    ENTRY_SET_CHECK(self, "permset", value);
 
     if(!PyObject_IsInstance(value, (PyObject*)&Permset_Type)) {
         PyErr_SetString(PyExc_TypeError, "argument 1 must be posix1e.Permset");

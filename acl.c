@@ -1013,13 +1013,29 @@ static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
 static PyObject* Permset_new(PyTypeObject* type, PyObject* args,
                              PyObject *keywds) {
     PyObject* newpermset;
+    Permset_Object* permset;
+    Entry_Object* parent = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!", &Entry_Type, &parent)) {
+        return NULL;
+    }
 
     newpermset = PyType_GenericNew(type, args, keywds);
 
-    if(newpermset != NULL) {
-        ((Permset_Object*)newpermset)->permset = NULL;
-        ((Permset_Object*)newpermset)->parent_entry = NULL;
+    if(newpermset == NULL) {
+        return NULL;
     }
+
+    permset = (Permset_Object*)newpermset;
+
+    if(acl_get_permset(parent->entry, &permset->permset) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        Py_DECREF(newpermset);
+        return NULL;
+    }
+
+    permset->parent_entry = (PyObject*)parent;
+    Py_INCREF(parent);
 
     return newpermset;
 }
@@ -1032,13 +1048,11 @@ static int Permset_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     if (!PyArg_ParseTuple(args, "O!", &Entry_Type, &parent))
         return -1;
 
-    if(acl_get_permset(parent->entry, &self->permset) == -1) {
-        PyErr_SetFromErrno(PyExc_IOError);
+    if ((PyObject*)parent != self->parent_entry) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Can't reinitialize with a different parent");
         return -1;
     }
-
-    self->parent_entry = (PyObject*)parent;
-    Py_INCREF(parent);
 
     return 0;
 }

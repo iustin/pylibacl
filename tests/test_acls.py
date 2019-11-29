@@ -29,7 +29,7 @@ import platform
 import re
 import errno
 import operator
-import pytest
+import pytest  # type: ignore
 import contextlib
 import pathlib
 import io
@@ -703,11 +703,29 @@ class TestModification:
         e = acl.append()
         p1 = e.permset
         p2 = Permset(e)
-        #self.assertEqual(p1, p2)
+        #assert p1 == p2
 
     def test_permset_creation_wrong_arg(self):
         with pytest.raises(TypeError):
           Permset(object())
+
+    def test_permset_reinitialisations(self):
+        a = posix1e.ACL()
+        e = posix1e.Entry(a)
+        f = posix1e.Entry(a)
+        p = e.permset
+        p.__init__(e)
+        with pytest.raises(ValueError, match="different parent"):
+            p.__init__(f)
+
+    @NOT_PYPY
+    def test_permset_reinit_leaks_refcount(self):
+        acl = posix1e.ACL()
+        e = acl.append()
+        p = e.permset
+        ref = sys.getrefcount(e)
+        p.__init__(e)
+        assert ref == sys.getrefcount(e), "Uh-oh, ref leaks..."
 
     def test_permset(self):
         """Test permissions"""

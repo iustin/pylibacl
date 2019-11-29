@@ -10,7 +10,7 @@ Major release removing Python 2 support. This allow both code cleanup
 and new features, such as:
 
 - Support for pathlib objects in `apply_to` and `has_extended`
-  functions.
+  functions when running with Python 3.6 and newer.
 - Use of built-in C API functions for bytes/unicode/pathlib conversion
   when dealing with file names, removing custom code (with the
   associated benefits).
@@ -24,7 +24,13 @@ Important API changes/bug fixes:
   (calling `__init__(…)` on an existing object) and segfaults (!) on
   non-initialised object attribute access.
 
-Additionally, test suite has changed to `pytest`.
+Minor improvements:
+
+- When available, add the file path to I/O error messages, which should
+  lead to easier debugging.
+- The test suite has changed to `pytest`, which allows increased
+  coverage via parameterisation.
+
 
 Version 0.5.4
 -------------

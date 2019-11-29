@@ -624,25 +624,22 @@ static char __ACL_append_doc__[] =
 
 /* Convenience method to create a new Entry */
 static PyObject* ACL_append(PyObject *obj, PyObject *args) {
-    ACL_Object* self = (ACL_Object*) obj;
     Entry_Object* newentry;
     Entry_Object* oldentry = NULL;
     int nret;
 
-    newentry = (Entry_Object*)PyType_GenericNew(&Entry_Type, NULL, NULL);
+    if (!PyArg_ParseTuple(args, "|O!", &Entry_Type, &oldentry)) {
+        return NULL;
+    }
+
+    PyObject *new_arglist = Py_BuildValue("(O)", obj);
+    if (new_arglist == NULL) {
+        return NULL;
+    }
+    newentry = (Entry_Object*) PyObject_CallObject((PyObject*)&Entry_Type, new_arglist);
+    Py_DECREF(new_arglist);
     if(newentry == NULL) {
         return NULL;
-    }
-
-    if (!PyArg_ParseTuple(args, "|O!", &Entry_Type, &oldentry)) {
-        Py_DECREF(newentry);
-        return NULL;
-    }
-
-    nret = acl_create_entry(&self->acl, &newentry->entry);
-    if(nret == -1) {
-        Py_DECREF(newentry);
-        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     if(oldentry != NULL) {
@@ -652,9 +649,6 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
             return PyErr_SetFromErrno(PyExc_IOError);
         }
     }
-
-    newentry->parent_acl = obj;
-    Py_INCREF(obj);
 
     return (PyObject*)newentry;
 }

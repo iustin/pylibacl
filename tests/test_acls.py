@@ -71,8 +71,7 @@ def ignore_ioerror(errnum, fn, *args, **kwargs):
     """
     try:
         fn(*args, **kwargs)
-    except IOError:
-        err = sys.exc_info()[1]
+    except IOError as err:
         if err.errno == errnum:
             return
         raise

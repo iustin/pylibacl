@@ -880,7 +880,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     switch(tag) {
     case ACL_USER:
       if((long)uid != uidgid) {
-        PyErr_SetString(PyExc_OverflowError, "cannot assign given qualifier");
+        PyErr_SetString(PyExc_OverflowError, "Can't assign given qualifier");
         return -1;
       } else {
         p = &uid;
@@ -888,7 +888,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
       break;
     case ACL_GROUP:
       if((long)gid != uidgid) {
-        PyErr_SetString(PyExc_OverflowError, "cannot assign given qualifier");
+        PyErr_SetString(PyExc_OverflowError, "Can't assign given qualifier");
         return -1;
       } else {
         p = &gid;
@@ -896,7 +896,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
       break;
     default:
       PyErr_SetString(PyExc_TypeError,
-                      "can only set qualifiers on ACL_USER or ACL_GROUP entries");
+                      "Can only set qualifiers on ACL_USER or ACL_GROUP entries");
       return -1;
     }
     if(acl_set_qualifier(self->entry, p) == -1) {
@@ -914,7 +914,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     tag_qual tq;
 
     if (self->entry == NULL) {
-        PyErr_SetString(PyExc_AttributeError, "entry attribute");
+        PyErr_SetString(PyExc_ValueError, "Can't get qualifier on uninitalized Entry object");
         return NULL;
     }
     if(get_tag_qualifier(self->entry, &tq) < 0) {
@@ -926,7 +926,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
         value = tq.gid;
     } else {
         PyErr_SetString(PyExc_TypeError,
-                        "given entry doesn't have an user or"
+                        "Given entry doesn't have an user or"
                         " group tag");
         return NULL;
     }

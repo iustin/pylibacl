@@ -1555,7 +1555,7 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
         return NULL;
 
     if(acl_delete_def_file(filename) == -1) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrnoWithFilename(PyExc_IOError, filename);
     }
 
     /* Return the result */

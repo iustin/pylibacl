@@ -445,6 +445,12 @@ class TestWrite:
         with get_dir(testdir) as dname:
           posix1e.delete_default(dname)
 
+    def test_delete_default_fail(self, testdir):
+        """Test removing the default ACL"""
+        with get_file_name(testdir) as fname:
+            with pytest.raises(IOError, match="no-such-file"):
+                posix1e.delete_default(fname+".no-such-file")
+
     @NOT_PYPY
     def test_delete_default_wrong_arg(self):
         with pytest.raises(TypeError):

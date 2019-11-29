@@ -709,14 +709,27 @@ static int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
 static PyObject* Entry_new(PyTypeObject* type, PyObject* args,
                            PyObject *keywds) {
     PyObject* newentry;
+    Entry_Object* entry;
+    ACL_Object* parent = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!", &ACL_Type, &parent))
+        return NULL;
 
     newentry = PyType_GenericNew(type, args, keywds);
 
-    if(newentry != NULL) {
-        ((Entry_Object*)newentry)->entry = NULL;
-        ((Entry_Object*)newentry)->parent_acl = NULL;
+    if(newentry == NULL) {
+        return NULL;
     }
 
+    entry = (Entry_Object*)newentry;
+
+    if(acl_create_entry(&parent->acl, &entry->entry) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        Py_DECREF(newentry);
+        return NULL;
+    }
+    Py_INCREF(parent);
+    entry->parent_acl = (PyObject*)parent;
     return newentry;
 }
 
@@ -728,14 +741,11 @@ static int Entry_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     if (!PyArg_ParseTuple(args, "O!", &ACL_Type, &parent))
         return -1;
 
-    if(acl_create_entry(&parent->acl, &self->entry) == -1) {
-        PyErr_SetFromErrno(PyExc_IOError);
+    if ((PyObject*)parent != self->parent_acl) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Can't reinitialize with a different parent");
         return -1;
     }
-
-    self->parent_acl = (PyObject*)parent;
-    Py_INCREF(parent);
-
     return 0;
 }
 
@@ -833,10 +843,6 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
     acl_tag_t value;
 
-    if (self->entry == NULL) {
-        PyErr_SetString(PyExc_AttributeError, "entry attribute");
-        return NULL;
-    }
     if(acl_get_tag_type(self->entry, &value) == -1) {
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;

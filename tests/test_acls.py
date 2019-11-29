@@ -520,6 +520,22 @@ class TestModification:
         with pytest.raises(TypeError):
           posix1e.Entry(object())
 
+    def test_entry_reinitialisations(self):
+        a = posix1e.ACL()
+        b = posix1e.ACL()
+        e = posix1e.Entry(a)
+        e.__init__(a)
+        with pytest.raises(ValueError, match="different parent"):
+            e.__init__(b)
+
+    @NOT_PYPY
+    def test_entry_reinit_leaks_refcount(self):
+        acl = posix1e.ACL()
+        e = acl.append()
+        ref = sys.getrefcount(acl)
+        e.__init__(acl)
+        assert ref == sys.getrefcount(acl), "Uh-oh, ref leaks..."
+
     def test_delete(self):
         """Test delete Entry from the ACL"""
         acl = posix1e.ACL()

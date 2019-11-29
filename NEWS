@@ -15,6 +15,15 @@ and new features, such as:
   when dealing with file names, removing custom code (with the
   associated benefits).
 
+Important API changes/bug fixes:
+
+- Initialisation protocol has been changed, to disallow uninitialised
+  objects; this means that `__new__` will always create valid objects,
+  to prevent the need for checking initialisation status in all code
+  paths; this also (implicitly) fixes memory leaks on re-initialisation
+  (calling `__init__(…)` on an existing object) and segfaults (!) on
+  non-initialised object attribute access.
+
 Additionally, test suite has changed to `pytest`.
 
 Version 0.5.4

@@ -597,6 +597,15 @@ class TestModification:
         with pytest.raises(EnvironmentError):
           acl.delete_entry(e)
 
+    def test_delete_unowned(self):
+        """Test delete Entry from the ACL"""
+        a = posix1e.ACL()
+        b = posix1e.ACL()
+        e = a.append()
+        e.tag_type = posix1e.ACL_OTHER
+        with pytest.raises(ValueError, match="un-owned entry"):
+            b.delete_entry(e)
+
     # This currently fails as this deletion seems to be accepted :/
     @pytest.mark.xfail(reason="Entry deletion is unreliable")
     def testDeleteInvalidEntry(self):

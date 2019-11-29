@@ -570,6 +570,11 @@ static PyObject* ACL_delete_entry(PyObject *obj, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O!", &Entry_Type, &e))
         return NULL;
 
+    if (e->parent_acl != obj) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Can't remove un-owned entry");
+        return NULL;
+    }
     if(acl_delete_entry(self->acl, e->entry) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 

@@ -414,8 +414,7 @@ static PyObject* ACL_applyto(PyObject* obj, PyObject* args) {
     if (nret < 0) {
         return NULL;
     } else {
-        Py_INCREF(Py_None);
-        return Py_None;
+        Py_RETURN_NONE;
     }
 }
 
@@ -507,9 +506,7 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
 
     self->acl = ptr;
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 #endif
 
@@ -576,9 +573,7 @@ static PyObject* ACL_delete_entry(PyObject *obj, PyObject *args) {
     if(acl_delete_entry(self->acl, e->entry) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static char __ACL_calc_mask_doc__[] =
@@ -605,9 +600,7 @@ static PyObject* ACL_calc_mask(PyObject *obj, PyObject *args) {
     if(acl_calc_mask(&self->acl) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static char __ACL_append_doc__[] =
@@ -1012,8 +1005,7 @@ static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
     if(acl_copy_entry(self->entry, other->entry) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 /**** Permset type *****/
@@ -1105,9 +1097,7 @@ static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
     if(acl_clear_perms(self->permset) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static PyObject* Permset_get_right(PyObject *obj, void* arg) {
@@ -1166,9 +1156,7 @@ static PyObject* Permset_add(PyObject* obj, PyObject* args) {
     if(acl_add_perm(self->permset, (acl_perm_t) right) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static char __Permset_delete_doc__[] =
@@ -1195,9 +1183,7 @@ static PyObject* Permset_delete(PyObject* obj, PyObject* args) {
     if(acl_delete_perm(self->permset, (acl_perm_t) right) == -1)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static char __Permset_test_doc__[] =
@@ -1580,9 +1566,7 @@ static PyObject* aclmodule_delete_default(PyObject* obj, PyObject* args) {
         return PyErr_SetFromErrnoWithFilename(PyExc_IOError, filename);
     }
 
-    /* Return the result */
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 #ifdef HAVE_LINUX

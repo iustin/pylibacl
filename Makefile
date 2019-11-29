@@ -55,7 +55,7 @@ test:
 
 fast-test:
 	python3 setup.py build_ext -i
-	python3 -m pytest tests -v
+	python3 -m pytest tests
 
 ci:
 	while inotifywait -e CLOSE_WRITE tests/test_*.py; do \

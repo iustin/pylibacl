@@ -952,23 +952,15 @@ static PyObject* Entry_get_parent(PyObject *obj, void* arg) {
  * should be created at init time!
  */
 static PyObject* Entry_get_permset(PyObject *obj, void* arg) {
-    Entry_Object *self = (Entry_Object*)obj;
     PyObject *p;
-    Permset_Object *ps;
 
-    p = Permset_new(&Permset_Type, NULL, NULL);
-    if(p == NULL)
-        return NULL;
-    ps = (Permset_Object*)p;
-    if(acl_get_permset(self->entry, &ps->permset) == -1) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        Py_DECREF(p);
+    PyObject *perm_arglist = Py_BuildValue("(O)", obj);
+    if (perm_arglist == NULL) {
         return NULL;
     }
-    ps->parent_entry = obj;
-    Py_INCREF(obj);
-
-    return (PyObject*)p;
+    p = PyObject_CallObject((PyObject*)&Permset_Type, perm_arglist);
+    Py_DECREF(perm_arglist);
+    return p;
 }
 
 /* Sets the permset of the entry to the passed Permset */

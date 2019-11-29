@@ -46,6 +46,11 @@ setup(name="pylibacl",
                              define_macros=macros,
                              )],
       python_requires = ">=3.4",
+      # Note: doesn't work since it's not a package. Sigh.
+      package_data = {
+          '': ['py.typed', 'posix1e.pyi'],
+      },
+      zip_safe=False,
       project_urls={
         "Bug Tracker": "https://github.com/iustin/pylibacl/issues",
       },

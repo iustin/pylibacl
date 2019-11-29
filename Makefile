@@ -74,4 +74,7 @@ clean:
 	rm -f *.so
 	rm -rf build
 
-.PHONY: doc test clean dist coverage ci
+types:
+	MYPYPATH=. mypy --check-untyped-defs --warn-incomplete-stub tests/test_acls.py
+
+.PHONY: doc test clean dist coverage ci types

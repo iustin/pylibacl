@@ -233,26 +233,22 @@ def subject(testdir, request):
 
 class TestLoad:
     """Load/create tests"""
-    def test_from_file(self, testdir):
-        """Test loading ACLs from a file"""
-        _, fname = get_file(testdir)
-        acl1 = posix1e.ACL(file=fname)
-        assert acl1.valid()
+    def test_from_file(self, file_subject):
+        """Test loading ACLs from a file/directory"""
+        acl = posix1e.ACL(file=file_subject)
+        assert acl.valid()
 
     def test_from_dir(self, testdir):
         """Test loading ACLs from a directory"""
         with get_dir(testdir) as dname:
-          acl1 = posix1e.ACL(file=dname)
           acl2 = posix1e.ACL(filedef=dname)
-          assert acl1.valid()
         # default ACLs might or might not be valid; missing ones are
         # not valid, so we don't test acl2 for validity
 
-    def test_from_fd(self, testdir):
+    def test_from_fd(self, fd_subject):
         """Test loading ACLs from a file descriptor"""
-        fd, _ = get_file(testdir)
-        acl1 = posix1e.ACL(fd=fd)
-        assert acl1.valid()
+        acl = posix1e.ACL(fd=fd_subject)
+        assert acl.valid()
 
     def test_from_nonexisting(self, testdir):
         _, fname = get_file(testdir)

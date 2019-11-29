@@ -132,16 +132,16 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
                               "mode", NULL };
-    char *format = "|etisO!si";
+    char *format = "|O&OsO!O&i";
     int mode = -1;
 #else
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
-    char *format = "|etisO!s";
+    char *format = "|O&OsO!O&";
 #endif
-    char *file = NULL;
-    char *filedef = NULL;
+    PyObject *file = NULL;
+    PyObject *filedef = NULL;
     char *text = NULL;
-    int fd = -1;
+    PyObject *fd = NULL;
     ACL_Object* thesrc = NULL;
 
     if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||
@@ -151,8 +151,9 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         return -1;
     }
     if(!PyArg_ParseTupleAndKeywords(args, keywds, format, kwlist,
-                                    NULL, &file, &fd, &text, &ACL_Type,
-                                    &thesrc, &filedef
+                                    PyUnicode_FSConverter, &file,
+                                    &fd, &text, &ACL_Type, &thesrc,
+                                    PyUnicode_FSConverter, &filedef
 #ifdef HAVE_LINUX
                                     , &mode
 #endif
@@ -164,16 +165,28 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     if(self->acl != NULL)
         acl_free(self->acl);
 
-    if(file != NULL)
-        self->acl = acl_get_file(file, ACL_TYPE_ACCESS);
-    else if(text != NULL)
+    if(file != NULL) {
+        fprintf(stderr, "foobar!\n");
+        char *path = PyBytes_AS_STRING(file);
+        self->acl = acl_get_file(path, ACL_TYPE_ACCESS);
+        Py_DECREF(file);
+    } else if(text != NULL)
         self->acl = acl_from_text(text);
-    else if(fd != -1)
-        self->acl = acl_get_fd(fd);
+    else if(fd != NULL) {
+        int fdval;
+        if ((fdval = PyObject_AsFileDescriptor(fd)) != -1) {
+            self->acl = acl_get_fd(fdval);
+        } else {
+            self->acl = NULL;
+        }
+    }
     else if(thesrc != NULL)
         self->acl = acl_dup(thesrc->acl);
-    else if(filedef != NULL)
-        self->acl = acl_get_file(filedef, ACL_TYPE_DEFAULT);
+    else if(filedef != NULL) {
+        char *path = PyBytes_AS_STRING(filedef);
+        self->acl = acl_get_file(path, ACL_TYPE_DEFAULT);
+        Py_DECREF(path);
+    }
 #ifdef HAVE_LINUX
     else if(mode != -1)
         self->acl = acl_from_mode(mode);
@@ -1224,11 +1237,11 @@ static char __ACL_Type_doc__[] =
     "\n"
     ".. note:: only one keyword parameter should be provided\n"
     "\n"
-    ":param string file: creates an ACL representing\n"
-    "    the access ACL of the specified file.\n"
-    ":param string filedef: creates an ACL representing\n"
+    ":param string/bytes/path-like file: creates an ACL representing\n"
+    "    the access ACL of the specified file or directory.\n"
+    ":param string/bytes/path-like filedef: creates an ACL representing\n"
     "    the default ACL of the given directory.\n"
-    ":param int fd: creates an ACL representing\n"
+    ":param int/iostream fd: creates an ACL representing\n"
     "    the access ACL of the given file descriptor.\n"
     ":param string text: creates an ACL from a \n"
     "    textual description; note the ACL must be valid, which\n"

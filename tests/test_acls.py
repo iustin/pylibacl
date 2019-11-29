@@ -315,7 +315,13 @@ class TestAclExtensions:
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         assert not acl1.check()
         acl2 = posix1e.ACL()
-        assert acl2.check()
+        c = acl2.check()
+        assert c == (ACL_MISS_ERROR, 0)
+        assert isinstance(c, tuple)
+        assert c[0] == ACL_MISS_ERROR
+        e = acl2.append()
+        c = acl2.check()
+        assert c == (ACL_ENTRY_ERROR, 0)
 
     def test_applyto(self, subject):
         """Test the apply_to function"""

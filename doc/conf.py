@@ -31,7 +31,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo']
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -69,6 +69,8 @@ exclude_patterns = ['_build', 'html']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 
+default_domain = 'python'
+
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True
 
@@ -88,6 +90,11 @@ pygments_style = 'sphinx'
 
 keep_warnings = True
 
+# Note: this is still needed in Sphinx 1.8 with recommonmark 0.4.0
+# (https://github.com/readthedocs/recommonmark/issues/119):
+source_parsers = {
+   '.md': 'recommonmark.parser.CommonMarkParser',
+}
 
 # -- Options for HTML output ---------------------------------------------------
 

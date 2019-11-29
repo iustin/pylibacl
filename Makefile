@@ -10,7 +10,7 @@ FULLVER       = pylibacl-$(VERSION)
 DISTFILE      = $(FULLVER).tar.gz
 
 MODNAME = posix1e.so
-RSTFILES = doc/index.rst doc/module.rst NEWS README.rst doc/conf.py
+RSTFILES = doc/index.rst doc/module.rst doc/news.rst doc/readme.md doc/conf.py
 
 all: doc test
 
@@ -22,6 +22,12 @@ $(DOCHTML)/index.html: $(MODNAME) $(RSTFILES) acl.c
 	touch $@
 
 doc: $(DOCHTML)/index.html
+
+doc/readme.md: README.md
+	ln -s ../README.md doc/readme.md
+
+doc/news.rst: NEWS
+	ln -s ../NEWS doc/news.rst
 
 dist:
 	fakeroot $(PYTHON) ./setup.py sdist
@@ -70,6 +76,7 @@ coverage:
 
 clean:
 	rm -rf $(DOCHTML) $(DOCTREES)
+	rm -f doc/readme.md doc/news.rst
 	rm -f $(MODNAME)
 	rm -f *.so
 	rm -rf build

@@ -1,36 +1,31 @@
-pylibacl
-========
+# pylibacl
 
 This is a Python 3.4+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
 combinations.
 
-Downloads: go to http://pylibacl.k1024.org/downloads. Latest version
+Downloads: go to <http://pylibacl.k1024.org/downloads>. Latest version
 is 0.5.4. The source repository is either at
-https://git.k1024.org/pylibacl.git or at
-https://github.com/iustin/pylibacl.
+<https://git.k1024.org/pylibacl.git> or at
+<https://github.com/iustin/pylibacl>.
 
 For any issues, please file bugs at
-https://github.com/iustin/pylibacl/issues.
+<https://github.com/iustin/pylibacl/issues>.
 
-.. image:: https://img.shields.io/travis/iustin/pylibacl
-    :alt: Travis CI
-    :target: https://travis-ci.org/iustin/pylibacl
-.. image:: https://img.shields.io/coveralls/github/iustin/pylibacl
-    :alt: Coveralls coverage
-    :target: https://coveralls.io/github/iustin/pylibacl?branch=master
-.. image:: https://img.shields.io/github/release-date/iustin/pylibacl
-    :alt: GitHub Release Date
-.. image:: https://img.shields.io/pypi/v/pylibacl
-    :alt: PyPI
-    :target: https://pypi.org/project/pylibacl/
-.. image:: https://img.shields.io/pypi/implementation/pylibacl
-    :alt: PyPI - Implementation
-.. image:: https://img.shields.io/pypi/dm/pylibacl
-    :alt: PyPI - Downloads
+[![Travis](https://img.shields.io/travis/iustin/pylibacl)](https://travis-ci.org/iustin/pylibacl)
+[![Codecov](https://img.shields.io/codecov/c/github/iustin/pylibacl)](https://codecov.io/gh/iustin/pylibacl)
+[![Read the Docs](https://img.shields.io/readthedocs/pylibacl)](http://pylibacl.readthedocs.io/en/latest/?badge=latest)
+[![GitHub issues](https://img.shields.io/github/issues/iustin/pylibacl)](https://github.com/iustin/pylibacl/issues)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/iustin/pylibacl)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/iustin/pylibacl)](https://github.com/iustin/pylibacl/releases)
+[![PyPI](https://img.shields.io/pypi/v/pylibacl)](https://pypi.org/project/pylibacl/)
+![Debian package](https://img.shields.io/debian/v/python-pylibacl)
+![Ubuntu package](https://img.shields.io/ubuntu/v/python-pylibacl)
+![GitHub Release Date](https://img.shields.io/github/release-date/iustin/pylibacl)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/iustin/pylibacl/latest)
+![GitHub last commit](https://img.shields.io/github/last-commit/iustin/pylibacl)
 
-Requirements
-------------
+## Requirements
 
 pylibacl has been written and tested on Linux, kernel v2.4 or newer,
 with XFS filesystems; ext2/ext3 should also work. Since release 0.4.0,
@@ -48,8 +43,7 @@ Solaris does, but I can't test it.
 - The sphinx python module, for your python version, if building the
   documentation.
 
-FreeBSD
-+++++++
+## FreeBSD
 
 Note that on FreeBSD, ACLs are not enabled by default (at least on UFS
 file systems). To enable them, run `tunefs -a enabled` on the file

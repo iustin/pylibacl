@@ -424,6 +424,14 @@ class TestAclExtensions:
         acl = posix1e.ACL(text="u::rx,g::-,o::-")
         assert acl.equiv_mode() == 0o500
 
+    @require_equiv_mode
+    @pytest.mark.xfail(reason="It seems equiv mode always passes, even for empty ACLs")
+    def test_equiv_mode_invalid(self):
+        """Test equiv_mode on invalid ACLs"""
+        a = posix1e.ACL()
+        with pytest.raises(EnvironmentError):
+            a.equiv_mode()
+
     @require_acl_check
     def test_to_any_text(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)

@@ -294,11 +294,29 @@ class TestLoad:
         with pytest.raises(TypeError):
           posix1e.ACL(foo="bar")
 
+    def test_uninit(self):
+        """Checks that uninit is actually empty init"""
+        acl = posix1e.ACL.__new__(posix1e.ACL)
+        assert not acl.valid()
+        e = acl.append()
+        e.permset
+        acl.delete_entry(e)
+
     def test_double_init(self):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         assert acl1.valid()
         acl1.__init__(text=BASIC_ACL_TEXT)
         assert acl1.valid()
+
+    @pytest.mark.xfail(reason="Unreliable test, re-init doesn't always invalidate children")
+    def test_double_init_breaks_children(self):
+        acl = posix1e.ACL()
+        e = acl.append()
+        e.permset.write = True
+        acl.__init__()
+        with pytest.raises(EnvironmentError):
+            e.permset.write = False
+
 
 class TestAclExtensions:
     """ACL extensions checks"""

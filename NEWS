@@ -22,7 +22,9 @@ Important API changes/bug fixes:
   to prevent the need for checking initialisation status in all code
   paths; this also (implicitly) fixes memory leaks on re-initialisation
   (calling `__init__(…)` on an existing object) and segfaults (!) on
-  non-initialised object attribute access.
+  non-initialised object attribute access. Note ACL re-initialisation is
+  tricky and (still) leads to undefined behaviour of existing Entry
+  objects pointing to it.
 - Restore `__setstate__`/`__getstate__` support on Linux; this was
   inadvertently removed due a typo(!) when adding support for it in
   FreeBSD. Pickle should work again for ACL instances, although not sure

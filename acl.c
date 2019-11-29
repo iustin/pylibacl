@@ -104,15 +104,24 @@ typedef struct {
 static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
                          PyObject *keywds) {
     PyObject* newacl;
+    ACL_Object *acl;
 
     newacl = type->tp_alloc(type, 0);
 
-    if(newacl != NULL) {
-        ((ACL_Object*)newacl)->acl = NULL;
-#ifdef HAVEL_LEVEL2
-        ((ACL_Object*)newacl)->entry_id = ACL_FIRST_ENTRY;
-#endif
+    if(newacl == NULL) {
+        return NULL;
     }
+    acl = (ACL_Object*) newacl;
+
+    acl->acl = acl_init(0);
+    if (acl->acl == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        Py_DECREF(newacl);
+        return NULL;
+    }
+#ifdef HAVEL_LEVEL2
+    acl->entry_id = ACL_FIRST_ENTRY;
+#endif
 
     return newacl;
 }

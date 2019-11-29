@@ -23,6 +23,10 @@ Important API changes/bug fixes:
   paths; this also (implicitly) fixes memory leaks on re-initialisation
   (calling `__init__(…)` on an existing object) and segfaults (!) on
   non-initialised object attribute access.
+- Restore `__setstate__`/`__getstate__` support on Linux; this was
+  inadvertently removed due a typo(!) when adding support for it in
+  FreeBSD. Pickle should work again for ACL instances, although not sure
+  how stable this serialisation format actually is.
 
 Minor improvements:
 

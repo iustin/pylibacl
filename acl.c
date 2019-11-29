@@ -1256,7 +1256,7 @@ static PyMethodDef ACL_methods[] = {
     {"check", ACL_check, METH_NOARGS, __check_doc__},
     {"equiv_mode", ACL_equiv_mode, METH_NOARGS, __equiv_mode_doc__},
 #endif
-#ifdef HAVE_ACL_COPYEXT
+#ifdef HAVE_ACL_COPY_EXT
     {"__getstate__", ACL_get_state, METH_NOARGS,
      "Dumps the ACL to an external format."},
     {"__setstate__", ACL_set_state, METH_VARARGS,
@@ -1653,6 +1653,8 @@ static char __posix1e_doc__[] =
     "  - :py:data:`HAS_EXTENDED_CHECK` for the module-level\n"
     "    :py:func:`has_extended` function\n"
     "  - :py:data:`HAS_EQUIV_MODE` for the :py:func:`ACL.equiv_mode` method\n"
+    "  - :py:data:`HAS_COPY_EXT` for the :py:func:`ACL.__getstate__` and\n"
+    "    :py:func:`ACL.__setstate__` functions (pickle protocol)\n"
     "\n"
     "Example:\n"
     "\n"
@@ -1721,6 +1723,9 @@ static char __posix1e_doc__[] =
     "\n"
     ".. py:data:: HAS_EQUIV_MODE\n\n"
     "   denotes support for the equiv_mode function\n"
+    "\n"
+    ".. py:data:: HAS_COPY_EXT\n\n"
+    "   denotes support for __getstate__()/__setstate__() on an ACL\n"
     "\n"
     ;
 
@@ -1824,5 +1829,12 @@ PyInit_posix1e(void)
     PyModule_AddIntConstant(m, "HAS_EXTENDED_CHECK", LINUX_EXT_VAL);
     PyModule_AddIntConstant(m, "HAS_EQUIV_MODE", LINUX_EXT_VAL);
 
+    PyModule_AddIntConstant(m, "HAS_COPY_EXT",
+#ifdef HAVE_ACL_COPY_EXT
+                            1
+#else
+                            0
+#endif
+                            );
     return m;
 }

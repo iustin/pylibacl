@@ -10,6 +10,7 @@ libs = []
 if u_sysname == "Linux":
     macros.append(("HAVE_LINUX", None))
     macros.append(("HAVE_LEVEL2", None))
+    macros.append(("HAVE_ACL_COPY_EXT", None))
     libs.append("acl")
 elif u_sysname == "GNU/kFreeBSD":
     macros.append(("HAVE_LINUX", None))

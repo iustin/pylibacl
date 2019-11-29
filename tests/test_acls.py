@@ -169,6 +169,7 @@ require_acl_check = pytest.mark.skipif("not HAS_ACL_CHECK")
 require_acl_entry = pytest.mark.skipif("not HAS_ACL_ENTRY")
 require_extended_check = pytest.mark.skipif("not HAS_EXTENDED_CHECK")
 require_equiv_mode = pytest.mark.skipif("not HAS_EQUIV_MODE")
+require_copy_ext = pytest.mark.skipif("not HAS_COPY_EXT")
 
 # Note: ACLs are valid only for files/directories, not symbolic links
 # themselves, so we only create valid symlinks.
@@ -434,6 +435,18 @@ class TestAclExtensions:
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         for entry in acl:
             assert entry.parent is acl
+
+    @require_copy_ext
+    def test_acl_copy_ext(self):
+        a = posix1e.ACL(text=BASIC_ACL_TEXT)
+        b = posix1e.ACL()
+        c = posix1e.ACL(acl=b)
+        assert a != b
+        assert b == c
+        state = a.__getstate__()
+        b.__setstate__(state)
+        assert a == b
+        assert b != c
 
 
 class TestWrite:

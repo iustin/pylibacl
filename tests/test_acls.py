@@ -552,6 +552,17 @@ class TestModification:
         with pytest.raises(TypeError):
           acl.append(object())
 
+    @pytest.mark.xfail(reason="Behaviour not conform to specification")
+    def test_append_invalid_source(self):
+        a = posix1e.ACL()
+        b = posix1e.ACL()
+        f = b.append()
+        b.delete_entry(f)
+        with pytest.raises(EnvironmentError):
+            f.permset.write = True
+        with pytest.raises(EnvironmentError):
+            e = a.append(f)
+
     def test_entry_creation(self):
         acl = posix1e.ACL()
         e = posix1e.Entry(acl)

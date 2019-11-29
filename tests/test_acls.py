@@ -305,7 +305,7 @@ class TestLoad:
     def test_double_init(self):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         assert acl1.valid()
-        acl1.__init__(text=BASIC_ACL_TEXT)
+        acl1.__init__(text=BASIC_ACL_TEXT) # type: ignore
         assert acl1.valid()
 
     @pytest.mark.xfail(reason="Unreliable test, re-init doesn't always invalidate children")
@@ -313,7 +313,7 @@ class TestLoad:
         acl = posix1e.ACL()
         e = acl.append()
         e.permset.write = True
-        acl.__init__()
+        acl.__init__() # type: ignore
         with pytest.raises(EnvironmentError):
             e.permset.write = False
 
@@ -357,7 +357,7 @@ class TestAclExtensions:
         with pytest.raises(TypeError):
           acl1.applyto(object())
         with pytest.raises(TypeError):
-          acl1.applyto(object(), object())
+          acl1.applyto(object(), object()) # type: ignore
 
     def test_apply_to_fail(self, testdir):
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
@@ -408,9 +408,9 @@ class TestAclExtensions:
     @require_extended_check
     def test_extended_arg_handling(self):
       with pytest.raises(TypeError):
-        has_extended()
+        has_extended() # type: ignore
       with pytest.raises(TypeError):
-        has_extended(object())
+        has_extended(object()) # type: ignore
 
     @require_equiv_mode
     def test_equiv_mode(self):
@@ -443,7 +443,7 @@ class TestAclExtensions:
     def test_to_any_text_wrong_args(self):
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         with pytest.raises(TypeError):
-          acl.to_any_text(foo="bar")
+          acl.to_any_text(foo="bar") # type: ignore
 
 
     @require_acl_check
@@ -454,13 +454,13 @@ class TestAclExtensions:
         assert acl1 == acl2
         assert acl1 != acl3
         with pytest.raises(TypeError):
-          acl1 < acl2
+          acl1 < acl2 # type: ignore
         with pytest.raises(TypeError):
-          acl1 >= acl3
-        assert acl1 != True
-        assert not (acl1 == 1)
+          acl1 >= acl3 # type: ignore
+        assert acl1 != True # type: ignore
+        assert not (acl1 == 1) # type: ignore
         with pytest.raises(TypeError):
-          acl1 > True
+          acl1 > True # type: ignore
 
     @require_acl_entry
     def test_acl_iterator(self):
@@ -498,7 +498,7 @@ class TestWrite:
     @NOT_PYPY
     def test_delete_default_wrong_arg(self):
         with pytest.raises(TypeError):
-          posix1e.delete_default(object())
+          posix1e.delete_default(object()) # type: ignore
 
     def test_reapply(self, testdir):
         """Test re-applying an ACL"""
@@ -550,7 +550,7 @@ class TestModification:
         """Test append a new Entry to the ACL based on wrong object type"""
         acl = posix1e.ACL()
         with pytest.raises(TypeError):
-          acl.append(object())
+          acl.append(object()) # type: ignore
 
     @pytest.mark.xfail(reason="Behaviour not conform to specification")
     def test_append_invalid_source(self):
@@ -574,22 +574,22 @@ class TestModification:
         # Checks for partial initialisation and deletion on error
         # path.
         with pytest.raises(TypeError):
-          posix1e.Entry(object())
+          posix1e.Entry(object()) # type: ignore
 
     def test_entry_reinitialisations(self):
         a = posix1e.ACL()
         b = posix1e.ACL()
         e = posix1e.Entry(a)
-        e.__init__(a)
+        e.__init__(a) # type: ignore
         with pytest.raises(ValueError, match="different parent"):
-            e.__init__(b)
+            e.__init__(b) # type: ignore
 
     @NOT_PYPY
     def test_entry_reinit_leaks_refcount(self):
         acl = posix1e.ACL()
         e = acl.append()
         ref = sys.getrefcount(acl)
-        e.__init__(acl)
+        e.__init__(acl) # type: ignore
         assert ref == sys.getrefcount(acl), "Uh-oh, ref leaks..."
 
     def test_delete(self):
@@ -641,7 +641,7 @@ class TestModification:
         """Test delete a non-Entry from the ACL"""
         acl = posix1e.ACL()
         with pytest.raises(TypeError):
-          acl.delete_entry(object())
+          acl.delete_entry(object()) # type: ignore
 
     def test_double_entries(self):
         """Test double entries"""
@@ -718,7 +718,7 @@ class TestModification:
         acl = ACL()
         e = acl.append()
         with pytest.raises(TypeError):
-          e.copy(object())
+          e.copy(object()) # type: ignore
 
     def test_set_permset(self):
         acl = ACL()
@@ -742,7 +742,7 @@ class TestModification:
         acl = ACL()
         e = acl.append()
         with pytest.raises(TypeError):
-          e.permset = object()
+          e.permset = object() # type: ignore
 
     def test_permset_creation(self):
         acl = ACL()
@@ -753,16 +753,16 @@ class TestModification:
 
     def test_permset_creation_wrong_arg(self):
         with pytest.raises(TypeError):
-          Permset(object())
+          Permset(object()) # type: ignore
 
     def test_permset_reinitialisations(self):
         a = posix1e.ACL()
         e = posix1e.Entry(a)
         f = posix1e.Entry(a)
         p = e.permset
-        p.__init__(e)
+        p.__init__(e) # type: ignore
         with pytest.raises(ValueError, match="different parent"):
-            p.__init__(f)
+            p.__init__(f) # type: ignore
 
     @NOT_PYPY
     def test_permset_reinit_leaks_refcount(self):
@@ -770,7 +770,7 @@ class TestModification:
         e = acl.append()
         p = e.permset
         ref = sys.getrefcount(e)
-        p.__init__(e)
+        p.__init__(e) # type: ignore
         assert ref == sys.getrefcount(e), "Uh-oh, ref leaks..."
 
     def test_permset(self):
@@ -805,9 +805,9 @@ class TestModification:
         str_ps = str(ps)
         self.checkRef(str_ps)
         def getter(perm):
-            return PERMSETS[perm][1].__get__(ps)
+            return PERMSETS[perm][1].__get__(ps) # type: ignore
         def setter(parm, value):
-            return PERMSETS[perm][1].__set__(ps, value)
+            return PERMSETS[perm][1].__set__(ps, value) # type: ignore
         for perm in PERMSETS:
             str_ps = str(ps)
             self.checkRef(str_ps)
@@ -833,13 +833,13 @@ class TestModification:
         ps = e.permset
         ps.clear()
         with pytest.raises(TypeError):
-          ps.add("foobar")
+          ps.add("foobar") # type: ignore
         with pytest.raises(TypeError):
-          ps.delete("foobar")
+          ps.delete("foobar") # type: ignore
         with pytest.raises(TypeError):
-          ps.test("foobar")
+          ps.test("foobar") # type: ignore
         with pytest.raises(ValueError):
-          ps.write = object()
+          ps.write = object() # type: ignore
 
     def test_qualifier_values(self):
         """Tests qualifier correct store/retrieval"""
@@ -889,7 +889,7 @@ class TestModification:
         acl = posix1e.ACL()
         e = acl.append()
         with pytest.raises(TypeError):
-          e.qualifier = object()
+          e.qualifier = object() # type: ignore
         with pytest.raises((TypeError, AttributeError)):
           del e.qualifier
 
@@ -931,7 +931,7 @@ class TestModification:
         acl = posix1e.ACL()
         e = acl.append()
         with pytest.raises(TypeError):
-          e.tag_type = object()
+          e.tag_type = object() # type: ignore
         e.tag_type = posix1e.ACL_USER_OBJ
         # For some reason, PyPy raises AttributeError. Strange...
         with pytest.raises((TypeError, AttributeError)):

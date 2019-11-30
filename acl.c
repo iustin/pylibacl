@@ -165,6 +165,8 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     if(self->acl != NULL)
         acl_free(self->acl);
 
+    self->acl = NULL;
+
     if(file != NULL) {
         fprintf(stderr, "foobar!\n");
         char *path = PyBytes_AS_STRING(file);
@@ -176,11 +178,8 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         int fdval;
         if ((fdval = PyObject_AsFileDescriptor(fd)) != -1) {
             self->acl = acl_get_fd(fdval);
-        } else {
-            self->acl = NULL;
         }
-    }
-    else if(thesrc != NULL)
+    } else if(thesrc != NULL)
         self->acl = acl_dup(thesrc->acl);
     else if(filedef != NULL) {
         char *path = PyBytes_AS_STRING(filedef);

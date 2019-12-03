@@ -846,10 +846,7 @@ class TestModification:
             qualifier = 1
             e.tag_type = tag
             while True:
-                if tag == posix1e.ACL_USER:
-                    regex = re.compile("user with uid %d" % qualifier)
-                else:
-                    regex = re.compile("group with gid %d" % qualifier)
+                regex = re.compile("(user|group) with (u|g)id %d" % qualifier)
                 try:
                     e.qualifier = qualifier
                 except OverflowError:
@@ -863,13 +860,15 @@ class TestModification:
         """Tests qualifier overflow handling"""
         acl = posix1e.ACL()
         e = acl.append()
-        qualifier = sys.maxsize * 2
+        # the uid_t/gid_t are unsigned, so they can hold slightly more
+        # than sys.maxsize*2 (on Linux).
+        qualifier = (sys.maxsize + 1) * 2
         for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
             e.tag_type = tag
             with pytest.raises(OverflowError):
                 e.qualifier = qualifier
 
-    def test_negative_qualifier(self):
+    def test_qualifier_underflow(self):
         """Tests negative qualifier handling"""
         # Note: this presumes that uid_t/gid_t in C are unsigned...
         acl = posix1e.ACL()

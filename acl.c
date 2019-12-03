@@ -869,7 +869,7 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
  */
 static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
-    long uidgid;
+    unsigned long uidgid;
     uid_t uid;
     gid_t gid;
     void *p;
@@ -882,7 +882,10 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
                         "qualifier must be integer");
         return -1;
     }
-    if((uidgid = PyLong_AsLong(value)) == -1) {
+    /* This is the negative value check, and larger than long
+       check. If uid_t/gid_t are long-sized, this is enough to check
+       for both over and underflow. */
+    if((uidgid = PyLong_AsUnsignedLong(value)) == (unsigned long) -1) {
         if(PyErr_Occurred() != NULL) {
             return -1;
         }
@@ -896,9 +899,11 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
     }
     uid = uidgid;
     gid = uidgid;
+    /* This is an extra overflow check, in case uid_t/gid_t are
+       int-sized (and int size smaller than long size). */
     switch(tag) {
     case ACL_USER:
-      if((long)uid != uidgid) {
+      if((unsigned long)uid != uidgid) {
         PyErr_SetString(PyExc_OverflowError, "Can't assign given qualifier");
         return -1;
       } else {
@@ -906,7 +911,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
       }
       break;
     case ACL_GROUP:
-      if((long)gid != uidgid) {
+      if((unsigned long)gid != uidgid) {
         PyErr_SetString(PyExc_OverflowError, "Can't assign given qualifier");
         return -1;
       } else {
@@ -929,7 +934,7 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
 /* Returns the qualifier of the entry */
 static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     Entry_Object *self = (Entry_Object*) obj;
-    long value;
+    unsigned long value;
     tag_qual tq;
 
     if (self->entry == NULL) {
@@ -949,7 +954,7 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
                         " group tag");
         return NULL;
     }
-    return PyLong_FromLong(value);
+    return PyLong_FromUnsignedLong(value);
 }
 
 /* Returns the parent ACL of the entry */

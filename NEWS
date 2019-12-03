@@ -29,6 +29,12 @@ Important API changes/bug fixes:
   inadvertently removed due a typo(!) when adding support for it in
   FreeBSD. Pickle should work again for ACL instances, although not sure
   how stable this serialisation format actually is.
+- Fix (and change) entry qualifier (which is a user/group ID) behaviour:
+  assume/require that uid_t/gid_t are unsigned types (they are with
+  glibc, MacOS and FreeBSD at least; the standard doesn't document the
+  signedness), and convert parsing and returning the qualifier to behave
+  accordingly. The breakage was most apparent on 32-bit architectures,
+  in which context the problem was originally reported (see issue #13).
 
 Minor improvements:
 

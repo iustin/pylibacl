@@ -271,11 +271,19 @@ class TestLoad:
         acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         assert acl1.valid()
 
+    # This is acl_check, but should actually be have_linux...
+    @require_acl_check
     def test_from_acl(self):
         """Test creating an ACL from an existing ACL"""
-        acl1 = posix1e.ACL()
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
         acl2 = posix1e.ACL(acl=acl1)
         assert acl1 == acl2
+
+    def test_from_acl_via_str(self):
+        # This is needed for not HAVE_LINUX cases.
+        acl1 = posix1e.ACL(text=BASIC_ACL_TEXT)
+        acl2 = posix1e.ACL(acl=acl1)
+        assert str(acl1) == str(acl2)
 
     def test_invalid_creation_params(self, testdir):
         """Test that creating an ACL from multiple objects fails"""

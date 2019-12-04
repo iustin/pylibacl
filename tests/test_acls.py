@@ -42,11 +42,13 @@ TEST_DIR = os.environ.get("TEST_DIR", ".")
 BASIC_ACL_TEXT = "u::rw,g::r,o::-"
 
 # Permset permission information
-PERMSETS = {
-  posix1e.ACL_READ: ("read", posix1e.Permset.read),
-  posix1e.ACL_WRITE: ("write", posix1e.Permset.write),
-  posix1e.ACL_EXECUTE: ("execute", posix1e.Permset.execute),
-  }
+PERMSETS = [
+    (ACL_READ, "read", Permset.read),
+    (ACL_WRITE, "write", Permset.write),
+    (ACL_EXECUTE, "execute", Permset.execute),
+]
+
+PERMSETS_IDS = [p[1] for p in PERMSETS]
 
 ALL_TAGS = [
   (posix1e.ACL_USER, "user"),
@@ -777,59 +779,68 @@ class TestModification:
         p.__init__(e) # type: ignore
         assert ref == sys.getrefcount(e), "Uh-oh, ref leaks..."
 
-    def test_permset(self):
+    @pytest.mark.parametrize("perm, txt, accessor",
+                             PERMSETS, ids=PERMSETS_IDS)
+    def test_permset(self, perm, txt, accessor):
         """Test permissions"""
+        del accessor
         acl = posix1e.ACL()
         e = acl.append()
         ps = e.permset
         ps.clear()
         str_ps = str(ps)
         self.checkRef(str_ps)
-        for perm in PERMSETS:
-            str_ps = str(ps)
-            txt = PERMSETS[perm][0]
-            self.checkRef(str_ps)
-            assert not ps.test(perm), ("Empty permission set should not"
-                                       " have permission '%s'" % txt)
-            ps.add(perm)
-            assert ps.test(perm), ("Permission '%s' should exist"
-                                   " after addition" % txt)
-            str_ps = str(ps)
-            self.checkRef(str_ps)
-            ps.delete(perm)
-            assert not ps.test(perm), ("Permission '%s' should not exist"
-                                       " after deletion" % txt)
+        assert not ps.test(perm), ("Empty permission set should not"
+                                   " have permission '%s'" % txt)
+        ps.add(perm)
+        assert ps.test(perm), ("Permission '%s' should exist"
+                               " after addition" % txt)
+        str_ps = str(ps)
+        self.checkRef(str_ps)
+        ps.delete(perm)
+        assert not ps.test(perm), ("Permission '%s' should not exist"
+                                   " after deletion" % txt)
+        ps.add(perm)
+        assert ps.test(perm), ("Permission '%s' should exist"
+                               " after addition" % txt)
+        ps.clear()
+        assert not ps.test(perm), ("Permission '%s' should not exist"
+                                   " after clearing" % txt)
 
-    def test_permset_via_accessors(self):
+
+
+    @pytest.mark.parametrize("perm, txt, accessor",
+                             PERMSETS, ids=PERMSETS_IDS)
+    def test_permset_via_accessors(self, perm, txt, accessor):
         """Test permissions"""
         acl = posix1e.ACL()
         e = acl.append()
         ps = e.permset
         ps.clear()
+        def getter():
+            return accessor.__get__(ps) # type: ignore
+        def setter(value):
+            return accessor.__set__(ps, value) # type: ignore
         str_ps = str(ps)
         self.checkRef(str_ps)
-        def getter(perm):
-            return PERMSETS[perm][1].__get__(ps) # type: ignore
-        def setter(parm, value):
-            return PERMSETS[perm][1].__set__(ps, value) # type: ignore
-        for perm in PERMSETS:
-            str_ps = str(ps)
-            self.checkRef(str_ps)
-            txt = PERMSETS[perm][0]
-            assert not getter(perm), ("Empty permission set should not"
-                                      " have permission '%s'" % txt)
-            setter(perm, True)
-            assert ps.test(perm), ("Permission '%s' should exist"
-                                   " after addition" % txt)
-            assert getter(perm), ("Permission '%s' should exist"
-                                  " after addition" % txt)
-            str_ps = str(ps)
-            self.checkRef(str_ps)
-            setter(perm, False)
-            assert not ps.test(perm), ("Permission '%s' should not exist"
-                                       " after deletion" % txt)
-            assert not getter(perm), ("Permission '%s' should not exist"
-                                      " after deletion" % txt)
+        assert not getter(), ("Empty permission set should not"
+                              " have permission '%s'" % txt)
+        setter(True)
+        assert ps.test(perm), ("Permission '%s' should exist"
+                               " after addition" % txt)
+        assert getter(), ("Permission '%s' should exist"
+                          " after addition" % txt)
+        str_ps = str(ps)
+        self.checkRef(str_ps)
+        setter(False)
+        assert not ps.test(perm), ("Permission '%s' should not exist"
+                                   " after deletion" % txt)
+        assert not getter(), ("Permission '%s' should not exist"
+                                  " after deletion" % txt)
+        setter(True)
+        assert getter()
+        ps.clear()
+        assert not getter()
 
     def test_permset_invalid_type(self):
         acl = posix1e.ACL()
@@ -845,24 +856,24 @@ class TestModification:
         with pytest.raises(ValueError):
           ps.write = object() # type: ignore
 
-    def test_qualifier_values(self):
+    @pytest.mark.parametrize("tag", [ACL_USER, ACL_GROUP],
+                             ids=["ACL_USER", "ACL_GROUP"])
+    def test_qualifier_values(self, tag):
         """Tests qualifier correct store/retrieval"""
         acl = posix1e.ACL()
         e = acl.append()
-        # work around deprecation warnings
-        for tag in [posix1e.ACL_USER, posix1e.ACL_GROUP]:
-            qualifier = 1
-            e.tag_type = tag
-            while True:
-                regex = re.compile("(user|group) with (u|g)id %d" % qualifier)
-                try:
-                    e.qualifier = qualifier
-                except OverflowError:
-                    # reached overflow condition, break
-                    break
-                assert e.qualifier == qualifier
-                assert regex.search(str(e)) is not None
-                qualifier *= 2
+        qualifier = 1
+        e.tag_type = tag
+        while True:
+            regex = re.compile("(user|group) with (u|g)id %d" % qualifier)
+            try:
+                e.qualifier = qualifier
+            except OverflowError:
+                # reached overflow condition, break
+                break
+            assert e.qualifier == qualifier
+            assert regex.search(str(e)) is not None
+            qualifier *= 2
 
     def test_qualifier_overflow(self):
         """Tests qualifier overflow handling"""

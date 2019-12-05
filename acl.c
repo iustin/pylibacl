@@ -20,6 +20,7 @@
 
 */
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 #include <sys/types.h>
@@ -499,7 +500,7 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
 static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     ACL_Object *self = (ACL_Object*) obj;
     const void *buf;
-    int bufsize;
+    Py_ssize_t bufsize;
     acl_t ptr;
 
     /* Parse the argument */

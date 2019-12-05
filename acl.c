@@ -503,7 +503,7 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     acl_t ptr;
 
     /* Parse the argument */
-    if (!PyArg_ParseTuple(args, "s#", &buf, &bufsize))
+    if (!PyArg_ParseTuple(args, "y#", &buf, &bufsize))
         return NULL;
 
     /* Try to import the external representation */

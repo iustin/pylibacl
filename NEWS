@@ -29,6 +29,8 @@ Important API changes/bug fixes:
   inadvertently removed due a typo(!) when adding support for it in
   FreeBSD. Pickle should work again for ACL instances, although not sure
   how stable this serialisation format actually is.
+- Additionally, slightly change `__setstate__()` input to not allow
+  Unicode, since the serialisation format is an opaque binary format.
 - Fix (and change) entry qualifier (which is a user/group ID) behaviour:
   assume/require that uid_t/gid_t are unsigned types (they are with
   glibc, MacOS and FreeBSD at least; the standard doesn't document the

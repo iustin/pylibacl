@@ -486,6 +486,12 @@ class TestAclExtensions:
         assert a == b
         assert b != c
 
+    @require_copy_ext
+    def test_acl_copy_ext_args(self):
+        a = posix1e.ACL()
+        with pytest.raises(TypeError):
+            a.__setstate__(None)
+
 
 class TestWrite:
     """Write tests"""

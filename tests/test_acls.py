@@ -79,6 +79,11 @@ def ignore_ioerror(errnum, fn, *args, **kwargs):
             return
         raise
 
+def assert_acl_eq(a, b):
+    if HAS_ACL_CHECK:
+        assert a == b
+    assert str(a) == str(b)
+
 @pytest.fixture
 def testdir():
     """per-test temp dir based in TEST_DIR"""
@@ -319,7 +324,7 @@ class TestLoad:
         acl2 = ACL(text=TEXT_0755)
         assert acl1 != acl2
         acl1.__init__(acl=acl2)  # type: ignore
-        assert acl1 == acl2
+        assert_acl_eq(acl1, acl2)
 
     def test_reinit_failure_noop(self):
         a = posix1e.ACL(text=TEXT_0755)
@@ -327,7 +332,7 @@ class TestLoad:
         assert a == b
         with pytest.raises(IOError):
             a.__init__(text='foobar')
-        assert a == b
+        assert_acl_eq(a, b)
 
     @pytest.mark.xfail(reason="Unreliable test, re-init doesn't always invalidate children")
     def test_double_init_breaks_children(self):

@@ -971,10 +971,6 @@ static PyObject* Entry_get_qualifier(PyObject *obj, void* arg) {
     unsigned long value;
     tag_qual tq;
 
-    if (self->entry == NULL) {
-        PyErr_SetString(PyExc_ValueError, "Can't get qualifier on uninitalized Entry object");
-        return NULL;
-    }
     if(get_tag_qualifier(self->entry, &tq) < 0) {
         return NULL;
     }

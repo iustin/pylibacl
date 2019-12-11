@@ -155,6 +155,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     ACL_Object* thesrc = NULL;
     const void *buf = NULL;
     Py_ssize_t bufsize;
+    int set_err = 0;
 
     if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||
        (keywds != NULL && PyDict_Check(keywds) && PyDict_Size(keywds) > 1)) {
@@ -179,6 +180,12 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         fprintf(stderr, "foobar!\n");
         char *path = PyBytes_AS_STRING(file);
         new = acl_get_file(path, ACL_TYPE_ACCESS);
+        // Set custom exception on this failure path which includes
+        // the filename.
+        if (new == NULL) {
+          PyErr_SetFromErrnoWithFilename(PyExc_IOError, path);
+          set_err = 1;
+        }
         Py_DECREF(file);
     } else if(text != NULL)
         new = acl_from_text(text);
@@ -192,6 +199,12 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     else if(filedef != NULL) {
         char *path = PyBytes_AS_STRING(filedef);
         new = acl_get_file(path, ACL_TYPE_DEFAULT);
+        // Set custom exception on this failure path which includes
+        // the filename.
+        if (new == NULL) {
+          PyErr_SetFromErrnoWithFilename(PyExc_IOError, path);
+          set_err = 1;
+        }
         Py_DECREF(path);
     }
 #ifdef HAVE_LINUX
@@ -207,7 +220,9 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         new = acl_init(0);
 
     if(new == NULL) {
-        PyErr_SetFromErrno(PyExc_IOError);
+        if (!set_err) {
+            PyErr_SetFromErrno(PyExc_IOError);
+        }
         return -1;
     }
 

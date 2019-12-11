@@ -256,6 +256,8 @@ class TestLoad:
         _, fname = get_file(testdir)
         with pytest.raises(IOError):
             posix1e.ACL(file="fname"+".no-such-file")
+        with pytest.raises(IOError):
+            posix1e.ACL(filedef="fname"+".no-such-file")
 
     def test_from_invalid_fd(self, testdir):
         fd, _ = get_file(testdir)

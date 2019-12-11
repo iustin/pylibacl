@@ -321,7 +321,7 @@ class TestLoad:
         acl1.__init__(acl=acl2)  # type: ignore
         assert acl1 == acl2
 
-    def test_entry_reinit_failure_noop(self):
+    def test_reinit_failure_noop(self):
         a = posix1e.ACL(text=TEXT_0755)
         b = posix1e.ACL(acl=a)
         assert a == b

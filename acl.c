@@ -146,6 +146,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
       "y#"
 #endif
       ;
+    acl_t new = NULL;
     int mode = -1;
     PyObject *file = NULL;
     PyObject *filedef = NULL;
@@ -174,51 +175,48 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
                                     ))
         return -1;
 
+    if(file != NULL) {
+        fprintf(stderr, "foobar!\n");
+        char *path = PyBytes_AS_STRING(file);
+        new = acl_get_file(path, ACL_TYPE_ACCESS);
+        Py_DECREF(file);
+    } else if(text != NULL)
+        new = acl_from_text(text);
+    else if(fd != NULL) {
+        int fdval;
+        if ((fdval = PyObject_AsFileDescriptor(fd)) != -1) {
+            new = acl_get_fd(fdval);
+        }
+    } else if(thesrc != NULL)
+        new = acl_dup(thesrc->acl);
+    else if(filedef != NULL) {
+        char *path = PyBytes_AS_STRING(filedef);
+        new = acl_get_file(path, ACL_TYPE_DEFAULT);
+        Py_DECREF(path);
+    }
+#ifdef HAVE_LINUX
+    else if(mode != -1)
+        new = acl_from_mode(mode);
+#endif
+#ifdef HAVE_ACL_COPY_EXT
+    else if(buf != NULL) {
+      new = acl_copy_int(buf);
+    }
+#endif
+    else
+        new = acl_init(0);
+
+    if(new == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+
     /* Free the old acl_t without checking for error, we don't
      * care right now */
     if(self->acl != NULL)
         acl_free(self->acl);
 
-    self->acl = NULL;
-
-    if(file != NULL) {
-        fprintf(stderr, "foobar!\n");
-        char *path = PyBytes_AS_STRING(file);
-        self->acl = acl_get_file(path, ACL_TYPE_ACCESS);
-        Py_DECREF(file);
-    } else if(text != NULL)
-        self->acl = acl_from_text(text);
-    else if(fd != NULL) {
-        int fdval;
-        if ((fdval = PyObject_AsFileDescriptor(fd)) != -1) {
-            self->acl = acl_get_fd(fdval);
-        }
-    } else if(thesrc != NULL)
-        self->acl = acl_dup(thesrc->acl);
-    else if(filedef != NULL) {
-        char *path = PyBytes_AS_STRING(filedef);
-        self->acl = acl_get_file(path, ACL_TYPE_DEFAULT);
-        Py_DECREF(path);
-    }
-#ifdef HAVE_LINUX
-    else if(mode != -1)
-        self->acl = acl_from_mode(mode);
-#endif
-#ifdef HAVE_ACL_COPY_EXT
-    else if(buf != NULL) {
-      if((self->acl = acl_copy_int(buf)) == NULL) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return -1;
-      }
-    }
-#endif
-    else
-        self->acl = acl_init(0);
-
-    if(self->acl == NULL) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return -1;
-    }
+    self->acl = new;
 
     return 0;
 }

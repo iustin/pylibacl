@@ -313,6 +313,18 @@ class TestLoad:
         assert acl1.valid()
         acl1.__init__(text=BASIC_ACL_TEXT) # type: ignore
         assert acl1.valid()
+        acl2 = ACL(mode=0o755)
+        assert acl1 != acl2
+        acl1.__init__(acl=acl2)  # type: ignore
+        assert acl1 == acl2
+
+    def test_entry_reinit_failure_noop(self):
+        a = posix1e.ACL(mode=0o0755)
+        b = posix1e.ACL(acl=a)
+        assert a == b
+        with pytest.raises(IOError):
+            a.__init__(text='foobar')
+        assert a == b
 
     @pytest.mark.xfail(reason="Unreliable test, re-init doesn't always invalidate children")
     def test_double_init_breaks_children(self):

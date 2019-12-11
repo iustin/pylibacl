@@ -134,10 +134,16 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
                               "mode",
 #endif
+#ifdef HAVE_ACL_COPY_EXT
+                              "data",
+#endif
                               NULL };
     char *format = "|O&OsO!O&"
 #ifdef HAVE_LINUX
       "i"
+#endif
+#ifdef HAVE_ACL_COPY_EXT
+      "y#"
 #endif
       ;
     int mode = -1;
@@ -146,6 +152,8 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     char *text = NULL;
     PyObject *fd = NULL;
     ACL_Object* thesrc = NULL;
+    const void *buf = NULL;
+    Py_ssize_t bufsize;
 
     if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||
        (keywds != NULL && PyDict_Check(keywds) && PyDict_Size(keywds) > 1)) {
@@ -159,6 +167,9 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
                                     PyUnicode_FSConverter, &filedef
 #ifdef HAVE_LINUX
                                     , &mode
+#endif
+#ifdef HAVE_ACL_COPY_EXT
+                                    , &buf, &bufsize
 #endif
                                     ))
         return -1;
@@ -192,6 +203,14 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #ifdef HAVE_LINUX
     else if(mode != -1)
         self->acl = acl_from_mode(mode);
+#endif
+#ifdef HAVE_ACL_COPY_EXT
+    else if(buf != NULL) {
+      if((self->acl = acl_copy_int(buf)) == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+      }
+    }
 #endif
     else
         self->acl = acl_init(0);
@@ -1259,6 +1278,8 @@ static char __ACL_Type_doc__[] =
     "    (e.g. ``mode=0644``); this is valid only when the C library\n"
     "    provides the ``acl_from_mode call``, and\n"
     "    note that no validation is done on the given value.\n"
+    ":param bytes data: creates an ACL from a serialised form,\n"
+    "    as provided by calling ``__getstate__()`` on an existing ACL\n"
     "\n"
     "If no parameters are passed, an empty ACL will be created; this\n"
     "makes sense only when your OS supports ACL modification\n"

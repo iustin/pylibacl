@@ -492,6 +492,19 @@ class TestAclExtensions:
         with pytest.raises(TypeError):
             a.__setstate__(None)
 
+    @require_copy_ext
+    def test_acl_init_copy_ext(self):
+        a = posix1e.ACL(text=BASIC_ACL_TEXT)
+        b = posix1e.ACL()
+        c = posix1e.ACL(data=a.__getstate__())
+        assert c != b
+        assert c == a
+
+    @require_copy_ext
+    def test_acl_init_copy_ext_invalid(self):
+        with pytest.raises(IOError):
+            posix1e.ACL(data=b"foobar")
+
 
 class TestWrite:
     """Write tests"""

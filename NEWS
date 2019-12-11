@@ -40,6 +40,10 @@ Important API changes/bug fixes:
 
 Minor improvements:
 
+- Added a `data` keyword argument to `ACL()`, which allows restoring an
+  ACL directly from a serialised form (as given by `__getstate__()`),
+  which should simplify some uses cases (`a = ACL(); a.__set
+  state__(…)`).
 - When available, add the file path to I/O error messages, which should
   lead to easier debugging.
 - The test suite has changed to `pytest`, which allows increased

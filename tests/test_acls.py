@@ -329,7 +329,7 @@ class TestLoad:
     def test_reinit_failure_noop(self):
         a = posix1e.ACL(text=TEXT_0755)
         b = posix1e.ACL(acl=a)
-        assert a == b
+        assert_acl_eq(a, b)
         with pytest.raises(IOError):
             a.__init__(text='foobar')
         assert_acl_eq(a, b)

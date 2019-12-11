@@ -130,15 +130,17 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
 /* Initialization of a new ACL instance */
 static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
     ACL_Object* self = (ACL_Object*) obj;
-#ifdef HAVE_LINUX
     static char *kwlist[] = { "file", "fd", "text", "acl", "filedef",
-                              "mode", NULL };
-    char *format = "|O&OsO!O&i";
-    int mode = -1;
-#else
-    static char *kwlist[] = { "file", "fd", "text", "acl", "filedef", NULL };
-    char *format = "|O&OsO!O&";
+#ifdef HAVE_LINUX
+                              "mode",
 #endif
+                              NULL };
+    char *format = "|O&OsO!O&"
+#ifdef HAVE_LINUX
+      "i"
+#endif
+      ;
+    int mode = -1;
     PyObject *file = NULL;
     PyObject *filedef = NULL;
     char *text = NULL;

@@ -177,7 +177,6 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
         return -1;
 
     if(file != NULL) {
-        fprintf(stderr, "foobar!\n");
         char *path = PyBytes_AS_STRING(file);
         new = acl_get_file(path, ACL_TYPE_ACCESS);
         // Set custom exception on this failure path which includes

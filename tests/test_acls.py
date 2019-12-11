@@ -40,6 +40,7 @@ from posix1e import *
 TEST_DIR = os.environ.get("TEST_DIR", ".")
 
 BASIC_ACL_TEXT = "u::rw,g::r,o::-"
+TEXT_0755 = "u::rwx,g::rx,o::rx"
 
 # Permset permission information
 PERMSETS = [
@@ -315,13 +316,13 @@ class TestLoad:
         assert acl1.valid()
         acl1.__init__(text=BASIC_ACL_TEXT) # type: ignore
         assert acl1.valid()
-        acl2 = ACL(mode=0o755)
+        acl2 = ACL(text=TEXT_0755)
         assert acl1 != acl2
         acl1.__init__(acl=acl2)  # type: ignore
         assert acl1 == acl2
 
     def test_entry_reinit_failure_noop(self):
-        a = posix1e.ACL(mode=0o0755)
+        a = posix1e.ACL(text=TEXT_0755)
         b = posix1e.ACL(acl=a)
         assert a == b
         with pytest.raises(IOError):

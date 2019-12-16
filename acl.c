@@ -204,7 +204,7 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
           PyErr_SetFromErrnoWithFilename(PyExc_IOError, path);
           set_err = 1;
         }
-        Py_DECREF(path);
+        Py_DECREF(filedef);
     }
 #ifdef HAVE_LINUX
     else if(mode != -1)

@@ -147,14 +147,18 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 #endif
       ;
     acl_t new = NULL;
+#ifdef HAVE_LINUX
     int mode = -1;
+#endif
     PyObject *file = NULL;
     PyObject *filedef = NULL;
     char *text = NULL;
     PyObject *fd = NULL;
     ACL_Object* thesrc = NULL;
+#ifdef HAVE_ACL_COPY_EXT
     const void *buf = NULL;
     Py_ssize_t bufsize;
+#endif
     int set_err = 0;
 
     if(!PyTuple_Check(args) || PyTuple_Size(args) != 0 ||

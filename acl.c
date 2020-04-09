@@ -120,7 +120,7 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
         Py_DECREF(newacl);
         return NULL;
     }
-#ifdef HAVEL_LEVEL2
+#ifdef HAVE_LEVEL2
     acl->entry_id = ACL_FIRST_ENTRY;
 #endif
 

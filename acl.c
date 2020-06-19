@@ -1793,16 +1793,13 @@ PyInit_posix1e(void)
 {
     PyObject *m, *d;
 
-    Py_TYPE(&ACL_Type) = &PyType_Type;
     if(PyType_Ready(&ACL_Type) < 0)
         return NULL;
 
 #ifdef HAVE_LEVEL2
-    Py_TYPE(&Entry_Type) = &PyType_Type;
     if(PyType_Ready(&Entry_Type) < 0)
         return NULL;
 
-    Py_TYPE(&Permset_Type) = &PyType_Type;
     if(PyType_Ready(&Permset_Type) < 0)
         return NULL;
 #endif

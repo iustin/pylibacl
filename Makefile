@@ -42,7 +42,7 @@ distcheck: dist
 
 test:
 	@set -e; \
-	for ver in 3.4 3.5 3.6 3.7 3.8; do \
+	for ver in 3.4 3.5 3.6 3.7 3.8 3.9; do \
 	  for flavour in "" "-dbg"; do \
 	    if type python$$ver$$flavour >/dev/null; then \
 	      echo Testing with python$$ver$$flavour; \

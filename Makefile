@@ -5,7 +5,7 @@ DOCDIR        = doc
 DOCHTML       = $(DOCDIR)/html
 DOCTREES      = $(DOCDIR)/doctrees
 ALLSPHINXOPTS = -d $(DOCTREES) $(SPHINXOPTS) $(DOCDIR)
-VERSION       = 0.5.4
+VERSION       = 0.6.0
 FULLVER       = pylibacl-$(VERSION)
 DISTFILE      = $(FULLVER).tar.gz
 

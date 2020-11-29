@@ -4,7 +4,7 @@ News
 Version 0.6.0
 -------------
 
-*unreleased*
+*Sun, 29 Nov 2020*
 
 Major release removing Python 2 support. This allow both code cleanup
 and new features, such as:
@@ -51,7 +51,6 @@ Minor improvements:
   lead to easier debugging.
 - The test suite has changed to `pytest`, which allows increased
   coverage via parameterisation.
-
 
 Version 0.5.4
 -------------
@@ -106,7 +105,6 @@ docstrings.
 
 Project reorganisation: the project home page has been moved from
 SourceForge to GitHub.
-
 
 Version 0.5
 -----------

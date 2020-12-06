@@ -220,6 +220,19 @@ FD_D = [
     "file io stream",
 ]
 
+DIR_D = [
+    "directory",
+    "directory (bytes)",
+    "directory (path object)",
+]
+
+DIR_P = [
+    get_dir,
+    as_bytes(get_dir),
+    pytest.param(as_fspath(get_dir),
+                 marks=[NOT_BEFORE_36, NOT_PYPY]),
+]
+
 ALL_P = FILE_P + FD_P
 ALL_D = FILE_D + FD_D
 
@@ -230,6 +243,11 @@ def file_subject(testdir, request):
 
 @pytest.fixture(params=FD_P, ids=FD_D)
 def fd_subject(testdir, request):
+    with request.param(testdir) as value:
+        yield value
+
+@pytest.fixture(params=DIR_P, ids=DIR_D)
+def dir_subject(testdir, request):
     with request.param(testdir) as value:
         yield value
 
@@ -246,10 +264,9 @@ class TestLoad:
         acl = posix1e.ACL(file=file_subject)
         assert acl.valid()
 
-    def test_from_dir(self, testdir):
+    def test_from_dir(self, dir_subject):
         """Test loading ACLs from a directory"""
-        with get_dir(testdir) as dname:
-          acl2 = posix1e.ACL(filedef=dname)
+        acl2 = posix1e.ACL(filedef=dir_subject)
         # default ACLs might or might not be valid; missing ones are
         # not valid, so we don't test acl2 for validity
 

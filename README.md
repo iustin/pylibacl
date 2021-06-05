@@ -56,8 +56,7 @@ or:
 - `pkg install py37-setuptools`
 
 
-License
--------
+## License
 
 pylibacl is Copyright (C) 2002-2009, 2012, 2014, 2015 Iustin Pop.
 

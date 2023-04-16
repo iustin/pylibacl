@@ -55,6 +55,9 @@ or:
 
 - `pkg install py37-setuptools`
 
+## Security
+
+For reporting security vulnerabilities, please see SECURITY.md.
 
 ## License
 

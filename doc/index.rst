@@ -12,6 +12,7 @@ Contents
    :maxdepth: 2
 
    readme.md
+   security.md
    module.rst
    implementation.rst
    news.rst

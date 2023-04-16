@@ -116,9 +116,11 @@ static PyObject* ACL_new(PyTypeObject* type, PyObject* args,
 
     acl->acl = acl_init(0);
     if (acl->acl == NULL) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         Py_DECREF(newacl);
         return NULL;
+        /* LCOV_EXCL_STOP */
     }
 #ifdef HAVE_LEVEL2
     acl->entry_id = ACL_FIRST_ENTRY;
@@ -248,7 +250,7 @@ static void ACL_dealloc(PyObject* obj) {
     if (have_error)
         PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if(self->acl != NULL && acl_free(self->acl) != 0)
-        PyErr_WriteUnraisable(obj);
+        PyErr_WriteUnraisable(obj);  /* LCOV_EXCL_LINE */
     if (have_error)
         PyErr_Restore(err_type, err_value, err_traceback);
     PyObject_DEL(self);
@@ -262,12 +264,16 @@ static PyObject* ACL_str(PyObject *obj) {
 
     text = acl_to_text(self->acl, NULL);
     if(text == NULL) {
+        /* LCOV_EXCL_START */
         return PyErr_SetFromErrno(PyExc_IOError);
+        /* LCOV_EXCL_STOP */
     }
     ret = PyUnicode_FromString(text);
     if(acl_free(text) != 0) {
+        /* LCOV_EXCL_START */
         Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
+        /* LCOV_EXCL_STOP */
     }
     return ret;
 }
@@ -317,12 +323,14 @@ static PyObject* ACL_to_any_text(PyObject *obj, PyObject *args,
 
     text = acl_to_any_text(self->acl, arg_prefix, arg_separator, arg_options);
     if(text == NULL) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     }
     ret = PyBytes_FromString(text);
     if(acl_free(text) != 0) {
+        /* LCOV_EXCL_START */
         Py_XDECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
+        /* LCOV_EXCL_STOP */
     }
     return ret;
 }
@@ -357,7 +365,7 @@ static PyObject* ACL_check(PyObject* obj, PyObject* args) {
     int eindex;
 
     if((result = acl_check(self->acl, &eindex)) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     if(result == 0) {
         Py_RETURN_FALSE;
     }
@@ -382,7 +390,7 @@ static PyObject* ACL_richcompare(PyObject* o1, PyObject* o2, int op) {
     acl1 = (ACL_Object*)o1;
     acl2 = (ACL_Object*)o2;
     if((n=acl_cmp(acl1->acl, acl2->acl))==-1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     switch(op) {
     case Py_EQ:
         ret = n == 0 ? Py_True : Py_False;
@@ -415,7 +423,7 @@ static PyObject* ACL_equiv_mode(PyObject* obj, PyObject* args) {
     mode_t mode;
 
     if(acl_equiv_mode(self->acl, &mode) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     return PyLong_FromLong(mode);
 }
 #endif
@@ -520,15 +528,17 @@ static PyObject* ACL_get_state(PyObject *obj, PyObject* args) {
 
     size = acl_size(self->acl);
     if(size == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     if((ret = PyBytes_FromStringAndSize(NULL, size)) == NULL)
         return NULL;
     buf = PyBytes_AsString(ret);
 
     if((nsize = acl_copy_ext(buf, self->acl, size)) == -1) {
+        /* LCOV_EXCL_START */
         Py_DECREF(ret);
         return PyErr_SetFromErrno(PyExc_IOError);
+        /* LCOV_EXCL_STOP */
     }
 
     return ret;
@@ -551,7 +561,7 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     /* Free the old acl. Should we ignore errors here? */
     if(self->acl != NULL) {
         if(acl_free(self->acl) == -1)
-            return PyErr_SetFromErrno(PyExc_IOError);
+            return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     }
 
     self->acl = ptr;
@@ -582,7 +592,7 @@ static PyObject* ACL_iternext(PyObject *obj) {
     nerr = acl_get_entry(self->acl, self->entry_id, &the_entry_t);
     self->entry_id = ACL_NEXT_ENTRY;
     if(nerr == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
     else if(nerr == 0) {
         /* Docs says this is not needed */
         /*PyErr_SetObject(PyExc_StopIteration, Py_None);*/
@@ -695,8 +705,10 @@ static PyObject* ACL_append(PyObject *obj, PyObject *args) {
     if(oldentry != NULL) {
         nret = acl_copy_entry(newentry->entry, oldentry->entry);
         if(nret == -1) {
+            /* LCOV_EXCL_START */
             Py_DECREF(newentry);
             return PyErr_SetFromErrno(PyExc_IOError);
+           /* LCOV_EXCL_STOP */
         }
     }
 
@@ -731,13 +743,17 @@ static int get_tag_qualifier(acl_entry_t entry, tag_qual *tq) {
     void *p;
 
     if(acl_get_tag_type(entry, &tq->tag) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
+        /* LCOV_EXCL_STOP */
     }
     if (tq->tag == ACL_USER || tq->tag == ACL_GROUP) {
         if((p = acl_get_qualifier(entry)) == NULL) {
+            /* LCOV_EXCL_START */
             PyErr_SetFromErrno(PyExc_IOError);
             return -1;
+            /* LCOV_EXCL_STOP */
         }
         if (tq->tag == ACL_USER) {
             tq->uid = *(uid_t*)p;
@@ -775,9 +791,11 @@ static PyObject* Entry_new(PyTypeObject* type, PyObject* args,
     entry = (Entry_Object*)newentry;
 
     if(acl_create_entry(&parent->acl, &entry->entry) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         Py_DECREF(newentry);
         return NULL;
+        /* LCOV_EXCL_STOP */
     }
     Py_INCREF(parent);
     entry->parent_acl = (PyObject*)parent;
@@ -856,13 +874,16 @@ static PyObject* Entry_str(PyObject *obj) {
     case ACL_MASK:
         kind = PyUnicode_FromString("the mask");
         break;
-    default:
+    default: /* LCOV_EXCL_START */
         kind = PyUnicode_FromString("UNKNOWN_TAG_TYPE!");
         break;
+        /* LCOV_EXCL_STOP */
     }
     if (kind == NULL) {
+        /* LCOV_EXCL_START */
         Py_DECREF(format);
         return NULL;
+        /* LCOV_EXCL_STOP */
     }
     PyObject *ret = PyUnicode_Concat(format, kind);
     Py_DECREF(format);
@@ -895,8 +916,10 @@ static PyObject* Entry_get_tag_type(PyObject *obj, void* arg) {
     acl_tag_t value;
 
     if(acl_get_tag_type(self->entry, &value) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
+        /* LCOV_EXCL_STOP */
     }
 
     return PyLong_FromLong(value);
@@ -932,8 +955,10 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
        this ugly dance with two variables and a pointer that will
        point to one of them. */
     if(acl_get_tag_type(self->entry, &tag) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
+        /* LCOV_EXCL_STOP */
     }
     uid = uidgid;
     gid = uidgid;
@@ -962,8 +987,10 @@ static int Entry_set_qualifier(PyObject* obj, PyObject* value, void* arg) {
       return -1;
     }
     if(acl_set_qualifier(self->entry, p) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
+        /* LCOV_EXCL_STOP */
     }
 
     return 0;
@@ -1028,8 +1055,10 @@ static int Entry_set_permset(PyObject* obj, PyObject* value, void* arg) {
     }
     p = (Permset_Object*)value;
     if(acl_set_permset(self->entry, p->permset) == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
+        /* LCOV_EXCL_STOP */
     }
     return 0;
 }
@@ -1053,7 +1082,7 @@ static PyObject* Entry_copy(PyObject *obj, PyObject *args) {
         return NULL;
 
     if(acl_copy_entry(self->entry, other->entry) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     Py_RETURN_NONE;
 }
@@ -1145,7 +1174,7 @@ static PyObject* Permset_clear(PyObject* obj, PyObject* args) {
     Permset_Object *self = (Permset_Object*) obj;
 
     if(acl_clear_perms(self->permset) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     Py_RETURN_NONE;
 }
@@ -1176,8 +1205,10 @@ static int Permset_set_right(PyObject* obj, PyObject* value, void* arg) {
     else
         nerr = acl_delete_perm(self->permset, *(acl_perm_t*)arg);
     if(nerr == -1) {
+        /* LCOV_EXCL_START */
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
+        /* LCOV_EXCL_STOP */
     }
     return 0;
 }
@@ -1204,7 +1235,7 @@ static PyObject* Permset_add(PyObject* obj, PyObject* args) {
         return NULL;
 
     if(acl_add_perm(self->permset, (acl_perm_t) right) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     Py_RETURN_NONE;
 }
@@ -1231,7 +1262,7 @@ static PyObject* Permset_delete(PyObject* obj, PyObject* args) {
         return NULL;
 
     if(acl_delete_perm(self->permset, (acl_perm_t) right) == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     Py_RETURN_NONE;
 }
@@ -1259,7 +1290,7 @@ static PyObject* Permset_test(PyObject* obj, PyObject* args) {
 
     ret = get_perm(self->permset, (acl_perm_t) right);
     if(ret == -1)
-        return PyErr_SetFromErrno(PyExc_IOError);
+        return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
 
     if(ret) {
         Py_RETURN_TRUE;

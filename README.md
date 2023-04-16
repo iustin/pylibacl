@@ -12,7 +12,7 @@ is 0.6.0. The source repository is either at
 For any issues, please file bugs at
 <https://github.com/iustin/pylibacl/issues>.
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/iustin/pylibacl/CI)](https://github.com/iustin/pylibacl/actions/workflows/ci.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/iustin/pylibacl/ci.yml?branch=master)](https://github.com/iustin/pylibacl/actions/workflows/ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/iustin/pylibacl)](https://codecov.io/gh/iustin/pylibacl)
 [![Read the Docs](https://img.shields.io/readthedocs/pylibacl)](http://pylibacl.readthedocs.io/en/latest/?badge=latest)
 [![GitHub issues](https://img.shields.io/github/issues/iustin/pylibacl)](https://github.com/iustin/pylibacl/issues)

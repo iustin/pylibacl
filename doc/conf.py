@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'recommonmark']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -89,12 +89,6 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 keep_warnings = True
-
-# Note: this is still needed in Sphinx 1.8 with recommonmark 0.4.0
-# (https://github.com/readthedocs/recommonmark/issues/119):
-source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
-}
 
 # -- Options for HTML output ---------------------------------------------------
 

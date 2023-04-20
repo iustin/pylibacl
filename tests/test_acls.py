@@ -524,6 +524,12 @@ class TestAclExtensions:
         assert b != c
 
     @require_copy_ext
+    def test_acl_copy_ext_failure(self):
+        a = posix1e.ACL()
+        with pytest.raises(IOError):
+            a.__setstate__(b'\0')
+
+    @require_copy_ext
     def test_acl_copy_ext_args(self):
         a = posix1e.ACL()
         with pytest.raises(TypeError):

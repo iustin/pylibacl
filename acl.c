@@ -558,10 +558,13 @@ static PyObject* ACL_set_state(PyObject *obj, PyObject* args) {
     if((ptr = acl_copy_int(buf)) == NULL)
         return PyErr_SetFromErrno(PyExc_IOError);
 
-    /* Free the old acl. Should we ignore errors here? */
     if(self->acl != NULL) {
-        if(acl_free(self->acl) == -1)
-            return PyErr_SetFromErrno(PyExc_IOError);  /* LCOV_EXCL_LINE */
+        /* Ignore errors in freeing the previous acl. We already
+           allocated the new acl, and the state of the previous one is
+           suspect if freeing failed (in Linux's libacl, deallocating
+           a valid ACL can't actually happen, so this path is
+           unlikely. */
+        acl_free(self->acl); /* LCOV_EXCL_LINE */
     }
 
     self->acl = ptr;

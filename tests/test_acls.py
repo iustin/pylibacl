@@ -541,6 +541,22 @@ class TestAclExtensions:
             a.__setstate__(nulled)
 
     @require_copy_ext
+    def test_acl_copy_ext_failure(self):
+        a = posix1e.ACL(text=BASIC_ACL_TEXT)
+        b = posix1e.ACL()
+        c = posix1e.ACL(acl=a)
+        assert a == c
+        assert a != b
+        state = b.__getstate__()
+        # See notes in the test_acl_copy_ext_failure() for how tricky this is.
+        nulled = b'\x00' * len(state)
+        with pytest.raises(IOError):
+            a.__setstate__(nulled)
+        # Assert that 'a' didn't change in the attempt to restore
+        # invalid state.
+        assert a == c
+
+    @require_copy_ext
     def test_acl_copy_ext_args(self):
         a = posix1e.ACL()
         with pytest.raises(TypeError):

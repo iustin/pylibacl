@@ -1,8 +1,6 @@
-News
-====
+# News
 
-Version 0.6.0
--------------
+## Version 0.6.0
 
 *Sun, 29 Nov 2020*
 
@@ -52,8 +50,7 @@ Minor improvements:
 - The test suite has changed to `pytest`, which allows increased
   coverage via parameterisation.
 
-Version 0.5.4
--------------
+## Version 0.5.4
 
 *released Thu, 14 Nov 2019*
 
@@ -69,8 +66,7 @@ Maintenance release:
 - Drop support (well, drop testing) for Python lower than 2.7.
 - Minor documentation improvements (closes #9, #12).
 
-Version 0.5.3
--------------
+## Version 0.5.3
 
 *released Thu, 30 Apr 2015*
 
@@ -82,15 +78,13 @@ FreeBSD fixes:
   with regards to invalid ACLs (which we do exercise in the test suite),
   thanks again to Garret for the bug reports.
 
-Version 0.5.2
--------------
+## Version 0.5.2
 
 *released Sat, 24 May 2014*
 
 No visible changes release: just fix tests when running under pypy.
 
-Version 0.5.1
--------------
+## Version 0.5.1
 
 *released Sun, 13 May 2012*
 
@@ -106,26 +100,23 @@ docstrings.
 Project reorganisation: the project home page has been moved from
 SourceForge to GitHub.
 
-Version 0.5
------------
+## Version 0.5
 
 *released Sun, 27 Dec 2009*
 
 Added support for Python 3.x and improved support for Unicode filenames.
 
-Version 0.4
------------
+## Version 0.4
 
 *released Sat, 28 Jun 2008*
 
-License
-~~~~~~~
+### License
+
 
 Starting with this version, pylibacl is licensed under LGPL 2.1,
 Febryary 1999 or any later versions (see README.rst and COPYING).
 
-Linux support
-~~~~~~~~~~~~~
+### Linux support
 
 A few more Linux-specific functions:
 
@@ -136,57 +127,48 @@ A few more Linux-specific functions:
 - add the acl_extended(...) function, which will check if an fd or path
   has an extended ACL
 
-FreeBSD support
-~~~~~~~~~~~~~~~
+### FreeBSD support
 
 FreeBSD 7.x will have almost all the acl manipulation functions that
 Linux has, with the exception of __getstate__/__setstate__. As a
 workaround, use the str() and ACL(text=...) methods to pass around
 textual representations.
 
-Interface
-~~~~~~~~~
+### Interface
 
 At module level there are now a few constants exported for easy-checking
 at runtime what features have been compiled in:
 
-- HAS_ACL_FROM_MODE, denoting whether the ACL constructor supports the
-  mode=0xxx parameter
+- `HAS_ACL_FROM_MODE`, denoting whether the ACL constructor supports
+  the `mode=0xxx` parameter
 
-- HAS_ACL_CHECK, denoting whether ACL instances support the check()
-  method
+- `HAS_ACL_CHECK`, denoting whether ACL instances support the
+  `check()` method
 
-- HAS_ACL_ENTRY, denoting whether ACL manipulation is possible and the
-  Entry and Permset classes are available
+- `HAS_ACL_ENTRY`, denoting whether ACL manipulation is possible and
+  the Entry and Permset classes are available
 
-- HAS_EXTENEDED_CHECK, denoting whether the acl_extended function is
-  supported
+- `HAS_EXTENEDED_CHECK`, denoting whether the `acl_extended()`
+  function is supported
 
-- HAS_EQUIV_MODE, denoting whether ACL instances support the
-  equiv_mode() method
+- `HAS_EQUIV_MODE`, denoting whether ACL instances support the
+  `equiv_mode()` method
 
-Internals
-~~~~~~~~~
+### Internals
 
 Many functions have now unittests, which is a good thing.
 
 
-Version 0.3
------------
+## Version 0.3
 
 *released Sun, 21 Oct 2007*
 
-Linux support
-~~~~~~~~~~~~~
+### Linux support
 
 Under Linux, implement more functions from libacl:
 
-- add ACL(mode=...), implementing acl_from_mode
-- add ACL().to_any_text, implementing acl_to_any_text
-- add ACL comparison, using acl_cmp
-- add ACL().check, which is a more descriptive function than validate
-
-.. Local Variables:
-.. mode: rst
-.. fill-column: 72
-.. End:
+- add `ACL(mode=...)`, implementing `acl_from_mode`.
+- add `ACL.to_any_text()`, implementing `acl_to_any_text`.
+- add ACL comparison, using `acl_cmp`.
+- add `ACL.check()`, which is a more descriptive function than
+  validate.

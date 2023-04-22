@@ -15,6 +15,6 @@ Contents
    security.md
    module.rst
    implementation.rst
-   news.rst
+   news.md
 
 Also see the :ref:`search`.

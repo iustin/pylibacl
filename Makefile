@@ -10,14 +10,14 @@ FULLVER       = pylibacl-$(VERSION)
 DISTFILE      = $(FULLVER).tar.gz
 
 MODNAME = posix1e.so
-RSTFILES = doc/index.rst doc/module.rst doc/news.rst doc/readme.md doc/conf.py
+DOCFILES = doc/index.rst doc/module.rst doc/news.md doc/readme.md doc/conf.py
 
 all: doc test
 
 $(MODNAME): acl.c
 	$(PYTHON) ./setup.py build_ext --inplace
 
-$(DOCHTML)/index.html: $(MODNAME) $(RSTFILES) acl.c
+$(DOCHTML)/index.html: $(MODNAME) $(DOCFILES) acl.c
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(DOCHTML)
 	touch $@
 

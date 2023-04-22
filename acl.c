@@ -245,15 +245,12 @@ static int ACL_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 static void ACL_dealloc(PyObject* obj) {
     ACL_Object *self = (ACL_Object*) obj;
     PyObject *err_type, *err_value, *err_traceback;
-    int have_error = PyErr_Occurred() ? 1 : 0;
 
-    if (have_error)
-        PyErr_Fetch(&err_type, &err_value, &err_traceback);
+    PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if(self->acl != NULL && acl_free(self->acl) != 0)
         PyErr_WriteUnraisable(obj);  /* LCOV_EXCL_LINE */
-    if (have_error)
-        PyErr_Restore(err_type, err_value, err_traceback);
-    PyObject_DEL(self);
+    PyErr_Restore(err_type, err_value, err_traceback);
+    Py_TYPE(obj)->tp_free(obj);
 }
 
 /* Converts the acl to a text format */
@@ -825,17 +822,14 @@ static int Entry_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 static void Entry_dealloc(PyObject* obj) {
     Entry_Object *self = (Entry_Object*) obj;
     PyObject *err_type, *err_value, *err_traceback;
-    int have_error = PyErr_Occurred() ? 1 : 0;
 
-    if (have_error)
-        PyErr_Fetch(&err_type, &err_value, &err_traceback);
+    PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if(self->parent_acl != NULL) {
         Py_DECREF(self->parent_acl);
         self->parent_acl = NULL;
     }
-    if (have_error)
-        PyErr_Restore(err_type, err_value, err_traceback);
-    PyObject_DEL(self);
+    PyErr_Restore(err_type, err_value, err_traceback);
+    Py_TYPE(obj)->tp_free(obj);
 }
 
 /* Converts the entry to a text format */
@@ -1144,17 +1138,14 @@ static int Permset_init(PyObject* obj, PyObject* args, PyObject *keywds) {
 static void Permset_dealloc(PyObject* obj) {
     Permset_Object *self = (Permset_Object*) obj;
     PyObject *err_type, *err_value, *err_traceback;
-    int have_error = PyErr_Occurred() ? 1 : 0;
 
-    if (have_error)
-        PyErr_Fetch(&err_type, &err_value, &err_traceback);
+    PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if(self->parent_entry != NULL) {
         Py_DECREF(self->parent_entry);
         self->parent_entry = NULL;
     }
-    if (have_error)
-        PyErr_Restore(err_type, err_value, err_traceback);
-    PyObject_DEL(self);
+    PyErr_Restore(err_type, err_value, err_traceback);
+    Py_TYPE(obj)->tp_free((PyObject *)obj);
 }
 
 /* Permset string representation */

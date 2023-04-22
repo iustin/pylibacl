@@ -1361,53 +1361,23 @@ static PyMethodDef ACL_methods[] = {
 /* The definition of the ACL Type */
 static PyTypeObject ACL_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "posix1e.ACL",
-    sizeof(ACL_Object),
-    0,
-    ACL_dealloc,        /* tp_dealloc */
-    0,                  /* tp_print */
-    0,                  /* tp_getattr */
-    0,                  /* tp_setattr */
-    0,                  /* formerly tp_compare, in 3.0 deprecated, in
-                           3.5 tp_as_async */
-    0,                  /* tp_repr */
-    0,                  /* tp_as_number */
-    0,                  /* tp_as_sequence */
-    0,                  /* tp_as_mapping */
-    0,                  /* tp_hash */
-    0,                  /* tp_call */
-    ACL_str,            /* tp_str */
-    0,                  /* tp_getattro */
-    0,                  /* tp_setattro */
-    0,                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __ACL_Type_doc__,   /* tp_doc */
-    0,                  /* tp_traverse */
-    0,                  /* tp_clear */
+    .tp_name = "posix1e.ACL",
+    .tp_basicsize = sizeof(ACL_Object),
+    .tp_itemsize = 0,
+    .tp_dealloc = ACL_dealloc,
+    .tp_str = ACL_str,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = __ACL_Type_doc__,
 #ifdef HAVE_LINUX
-    ACL_richcompare,    /* tp_richcompare */
-#else
-    0,                  /* tp_richcompare */
+    .tp_richcompare = ACL_richcompare,
 #endif
-    0,                  /* tp_weaklistoffset */
 #ifdef HAVE_LEVEL2
-    ACL_iter,
-    ACL_iternext,
-#else
-    0,                  /* tp_iter */
-    0,                  /* tp_iternext */
+    .tp_iter = ACL_iter,
+    .tp_iternext = ACL_iternext,
 #endif
-    ACL_methods,        /* tp_methods */
-    0,                  /* tp_members */
-    0,                  /* tp_getset */
-    0,                  /* tp_base */
-    0,                  /* tp_dict */
-    0,                  /* tp_descr_get */
-    0,                  /* tp_descr_set */
-    0,                  /* tp_dictoffset */
-    ACL_init,           /* tp_init */
-    0,                  /* tp_alloc */
-    ACL_new,            /* tp_new */
+    .tp_methods = ACL_methods,
+    .tp_init = ACL_init,
+    .tp_new = ACL_new,
 };
 
 #ifdef HAVE_LEVEL2
@@ -1479,43 +1449,17 @@ static char __Entry_Type_doc__[] =
 /* The definition of the Entry Type */
 static PyTypeObject Entry_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "posix1e.Entry",
-    sizeof(Entry_Object),
-    0,
-    Entry_dealloc,      /* tp_dealloc */
-    0,                  /* tp_print */
-    0,                  /* tp_getattr */
-    0,                  /* tp_setattr */
-    0,                  /* tp_compare */
-    0,                  /* tp_repr */
-    0,                  /* tp_as_number */
-    0,                  /* tp_as_sequence */
-    0,                  /* tp_as_mapping */
-    0,                  /* tp_hash */
-    0,                  /* tp_call */
-    Entry_str,          /* tp_str */
-    0,                  /* tp_getattro */
-    0,                  /* tp_setattro */
-    0,                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __Entry_Type_doc__, /* tp_doc */
-    0,                  /* tp_traverse */
-    0,                  /* tp_clear */
-    0,                  /* tp_richcompare */
-    0,                  /* tp_weaklistoffset */
-    0,                  /* tp_iter */
-    0,                  /* tp_iternext */
-    Entry_methods,      /* tp_methods */
-    0,                  /* tp_members */
-    Entry_getsets,      /* tp_getset */
-    0,                  /* tp_base */
-    0,                  /* tp_dict */
-    0,                  /* tp_descr_get */
-    0,                  /* tp_descr_set */
-    0,                  /* tp_dictoffset */
-    Entry_init,         /* tp_init */
-    0,                  /* tp_alloc */
-    Entry_new,          /* tp_new */
+    .tp_name = "posix1e.Entry",
+    .tp_basicsize = sizeof(Entry_Object),
+    .tp_itemsize = 0,
+    .tp_dealloc = Entry_dealloc,
+    .tp_str = Entry_str,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = __Entry_Type_doc__,
+    .tp_methods = Entry_methods,
+    .tp_getset = Entry_getsets,
+    .tp_init = Entry_init,
+    .tp_new = Entry_new
 };
 
 /* Permset type methods */
@@ -1586,43 +1530,17 @@ static char __Permset_Type_doc__[] =
 /* The definition of the Permset Type */
 static PyTypeObject Permset_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "posix1e.Permset",
-    sizeof(Permset_Object),
-    0,
-    Permset_dealloc,    /* tp_dealloc */
-    0,                  /* tp_print */
-    0,                  /* tp_getattr */
-    0,                  /* tp_setattr */
-    0,                  /* tp_compare */
-    0,                  /* tp_repr */
-    0,                  /* tp_as_number */
-    0,                  /* tp_as_sequence */
-    0,                  /* tp_as_mapping */
-    0,                  /* tp_hash */
-    0,                  /* tp_call */
-    Permset_str,        /* tp_str */
-    0,                  /* tp_getattro */
-    0,                  /* tp_setattro */
-    0,                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT, /* tp_flags */
-    __Permset_Type_doc__,/* tp_doc */
-    0,                  /* tp_traverse */
-    0,                  /* tp_clear */
-    0,                  /* tp_richcompare */
-    0,                  /* tp_weaklistoffset */
-    0,                  /* tp_iter */
-    0,                  /* tp_iternext */
-    Permset_methods,    /* tp_methods */
-    0,                  /* tp_members */
-    Permset_getsets,    /* tp_getset */
-    0,                  /* tp_base */
-    0,                  /* tp_dict */
-    0,                  /* tp_descr_get */
-    0,                  /* tp_descr_set */
-    0,                  /* tp_dictoffset */
-    Permset_init,       /* tp_init */
-    0,                  /* tp_alloc */
-    Permset_new,        /* tp_new */
+    .tp_name = "posix1e.Permset",
+    .tp_basicsize = sizeof(Permset_Object),
+    .tp_itemsize = 0,
+    .tp_dealloc = Permset_dealloc,
+    .tp_str = Permset_str,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = __Permset_Type_doc__,
+    .tp_methods = Permset_methods,
+    .tp_getset = Permset_getsets,
+    .tp_init = Permset_init,
+    .tp_new = Permset_new,
 };
 
 #endif
@@ -1816,10 +1734,10 @@ static char __posix1e_doc__[] =
 
 static struct PyModuleDef posix1emodule = {
     PyModuleDef_HEAD_INIT,
-    "posix1e",
-    __posix1e_doc__,
-    0,
-    aclmodule_methods,
+    .m_name = "posix1e",
+    .m_doc = __posix1e_doc__,
+    .m_size = 0,
+    .m_methods = aclmodule_methods,
 };
 
 PyMODINIT_FUNC

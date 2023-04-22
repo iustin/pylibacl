@@ -45,7 +45,7 @@ setup(name="pylibacl",
                              libraries=libs,
                              define_macros=macros,
                              )],
-      python_requires = ">=3.4",
+      python_requires = ">=3.7",
       # Note: doesn't work since it's not a package. Sigh.
       package_data = {
           '': ['py.typed', 'posix1e.pyi'],

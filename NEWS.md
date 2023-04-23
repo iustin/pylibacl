@@ -1,8 +1,24 @@
 # News
 
+## Version 0.7.0
+
+*released Sun, 23 Apr 2023*
+
+Important: Python 3.7 is the minimum supported version, due to
+difficulty of testing old releases, and the fact that everything older
+has been deprecated a long time ago (e.g. 3.6 at the end of 2021).
+
+Otherwise, a minor release:
+
+- Improve error handling in some corner cases (not expected to have
+  any real-life impact, but who knows).
+- Improved testing coverage and test infrastructure.
+- Modernise parts of the C code based on recent Python version
+  guidelines.
+
 ## Version 0.6.0
 
-*Sun, 29 Nov 2020*
+*released Sun, 29 Nov 2020*
 
 Major release removing Python 2 support. This allow both code cleanup
 and new features, such as:

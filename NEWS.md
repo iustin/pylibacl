@@ -15,6 +15,7 @@ Otherwise, a minor release:
 - Improved testing coverage and test infrastructure.
 - Modernise parts of the C code based on recent Python version
   guidelines.
+- Add a simple security policy and contribution guidelines.
 
 ## Version 0.6.0
 

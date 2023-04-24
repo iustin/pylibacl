@@ -1,7 +1,8 @@
 include COPYING
 include Makefile
 include NEWS.md
-include README.rst
+include README.md
+include CONTRIBUTING.md
 include SECURITY.md
 include acl.c
 include setup.cfg

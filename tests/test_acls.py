@@ -523,20 +523,34 @@ class TestAclExtensions:
         assert a == b
         assert b != c
 
+    @staticmethod
+    def get_nulled_state(src=None):
+        """Generate a mostly-valid external serialization
+
+        Passing arbitrary state into acl_copy_int() is dangerous. That
+        C function gets a void * buffer, and then casts that to an ACL
+        structure, irrespective of buffer length; this can lead to
+        segfaults (via unallocated memory indexing). Depending on the
+        exact buffer, the same code might segfault on all
+        architectures, some architectures, all C compiler versions, or
+        some C compilers, or any combination of the above :(
+
+        To mitigate this, pass a much larger buffer size as returned
+        from the state, just nulled out - in the Linux version of the
+        library, the first byte is the structure size and is tested
+        for correct size, and a null byte will cause failure.
+
+        """
+        if src is None:
+            src = posix1e.ACL()
+        state = src.__getstate__()
+        nulled = b'\x00' * (10 * len(state))
+        return nulled
+
     @require_copy_ext
     def test_acl_copy_ext_failure(self):
         a = posix1e.ACL()
-        state = a.__getstate__()
-        # This is a dangerous test. The acl_copy_int() C function gets
-        # a void * buffer, and then casts that to an ACL structure,
-        # irrespective of buffer length; this can lead to segfaults
-        # (via unallocated memory indexing)
-        #
-        # To mitigate this, pass same buffer size as returned from the
-        # state, just nulled out - in the Linux version of the
-        # library, the first byte is the structure size and is tested
-        # for correct size, and a null byte will cause failure.
-        nulled = b'\x00' * len(state)
+        nulled = self.get_nulled_state(a)
         with pytest.raises(IOError):
             a.__setstate__(nulled)
 
@@ -547,9 +561,7 @@ class TestAclExtensions:
         c = posix1e.ACL(acl=a)
         assert a == c
         assert a != b
-        state = b.__getstate__()
-        # See notes in the test_acl_copy_ext_failure() for how tricky this is.
-        nulled = b'\x00' * len(state)
+        nulled = self.get_nulled_state(b)
         with pytest.raises(IOError):
             a.__setstate__(nulled)
         # Assert that 'a' didn't change in the attempt to restore
@@ -573,7 +585,7 @@ class TestAclExtensions:
     @require_copy_ext
     def test_acl_init_copy_ext_invalid(self):
         with pytest.raises(IOError):
-            posix1e.ACL(data=b"foobar")
+            posix1e.ACL(data=self.get_nulled_state())
 
 
 class TestWrite:

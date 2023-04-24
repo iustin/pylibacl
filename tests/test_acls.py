@@ -548,14 +548,14 @@ class TestAclExtensions:
         return nulled
 
     @require_copy_ext
-    def test_acl_copy_ext_failure(self):
+    def test_acl_copy_int_failure(self):
         a = posix1e.ACL()
         nulled = self.get_nulled_state(a)
         with pytest.raises(IOError):
             a.__setstate__(nulled)
 
     @require_copy_ext
-    def test_acl_copy_ext_failure(self):
+    def test_acl_copy_int_failure_is_noop(self):
         a = posix1e.ACL(text=BASIC_ACL_TEXT)
         b = posix1e.ACL()
         c = posix1e.ACL(acl=a)
@@ -569,13 +569,13 @@ class TestAclExtensions:
         assert a == c
 
     @require_copy_ext
-    def test_acl_copy_ext_args(self):
+    def test_acl_copy_int_args(self):
         a = posix1e.ACL()
         with pytest.raises(TypeError):
             a.__setstate__(None)
 
     @require_copy_ext
-    def test_acl_init_copy_ext(self):
+    def test_acl_init_copy_int(self):
         a = posix1e.ACL(text=BASIC_ACL_TEXT)
         b = posix1e.ACL()
         c = posix1e.ACL(data=a.__getstate__())
@@ -583,7 +583,7 @@ class TestAclExtensions:
         assert c == a
 
     @require_copy_ext
-    def test_acl_init_copy_ext_invalid(self):
+    def test_acl_init_copy_int_invalid(self):
         with pytest.raises(IOError):
             posix1e.ACL(data=self.get_nulled_state())
 

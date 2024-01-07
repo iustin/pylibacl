@@ -12,7 +12,8 @@ version is 0.7.0. The source repository is either at
 For any issues, please file bugs at
 <https://github.com/iustin/pylibacl/issues>.
 
-See the `CONTRIBUTING.md` file for details on how to contribute.
+See the `CONTRIBUTING.md` file for details on how to contribute, or
+support me on [ko-fi](https://ko-fi.com/iustin).
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/iustin/pylibacl/ci.yml?branch=main)](https://github.com/iustin/pylibacl/actions/workflows/ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/iustin/pylibacl)](https://codecov.io/gh/iustin/pylibacl)

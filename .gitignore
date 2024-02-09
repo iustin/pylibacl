@@ -7,4 +7,6 @@
 /posix1e.so
 /posix1e.txt
 /pylibacl.egg-info
+/TAGS
 *.py[co]
+*.so

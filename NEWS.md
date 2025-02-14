@@ -1,5 +1,14 @@
 # News
 
+## Version 0.7.1
+
+*released Fri, 14 Feb 2025*
+
+Minor version, with a few test improvements, and updated documentation
+building dependencies. No user-visible changes otherwise.
+
+Tested with CPython versions 3.7-3.13, and PyPy 3.7-3.10.
+
 ## Version 0.7.0
 
 *released Sun, 23 Apr 2023*

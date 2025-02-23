@@ -1,5 +1,16 @@
 # News
 
+## Version 0.7.2
+
+*released Sun, 23 Feb 2025*
+
+Single-bugfix release: fixed the typing stub module. Nothing exercised
+it, and having been generated with pre-3.6 stubgen, it failed to work
+on modern versions. No tests failed (should add some), but the doc
+build by Sphinx failed accidentally since the failure to import (which
+was ignored) led to a missing title for the module, which Sphinx
+complained about. Quite funny :)
+
 ## Version 0.7.1
 
 *released Fri, 14 Feb 2025*

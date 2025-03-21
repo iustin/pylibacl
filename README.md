@@ -2,7 +2,8 @@
 
 This is a Python 3.7+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
-combinations.
+combinations. Note this module provides a Python interface to libacl
+it does not have the features of setfacl.
 
 Downloads: go to <https://pylibacl.k1024.org/downloads>. Latest
 version is 0.7.2. The source repository is either at
@@ -58,6 +59,19 @@ system in question (after mounting it read-only). Then install:
 or:
 
 - `pkg install py37-setuptools`
+
+## Example
+```
+import posix1e
+
+# you must provide user, group and other permissions first and in that order
+acl = ACL(text = 'u:rx,g:r,o:-,u:123:r')
+# if you don't provide a mask you must explicity have it generated
+acl.calc_mask()
+acl.applyto('/foo/)
+# unlike setfacl there is no "d:u:123:r" call applyto the a different type
+acl.applyto('/foo', ACL.ACL_TYPE_DEFAULT)
+```
 
 ## Security
 

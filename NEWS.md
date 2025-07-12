@@ -1,5 +1,18 @@
 # News
 
+## Version 0.7.3
+
+*released Sun, 13 Jul 2025*
+
+This is a test-only changes release, removing some very old testing for
+reference counts, introduced in 2012, but which stopped working with Python
+3.14 as it changed reference counting by introducing optimizations in some
+cases. No need to upgrade unless you want to make sure the test suite passes on
+3.14, and no real failures are hidden by the broken reference testing.
+
+Additionally, the release enables CI on Python 3.14, thanks Marcin
+Zajączkowski!
+
 ## Version 0.7.2
 
 *released Sun, 23 Feb 2025*

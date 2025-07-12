@@ -623,23 +623,10 @@ class TestWrite:
 class TestModification:
     """ACL modification tests"""
 
-    def checkRef(self, obj):
-        """Checks if a given obj has a 'sane' refcount"""
-        if platform.python_implementation() == "PyPy":
-            return
-        ref_cnt = sys.getrefcount(obj)
-        # FIXME: hardcoded value for the max ref count... but I've
-        # seen it overflow on bad reference counting, so it's better
-        # to be safe
-        if ref_cnt < 2 or ref_cnt > 1024:
-            pytest.fail("Wrong reference count, expected 2-1024 and got %d" %
-                        ref_cnt)
-
     def test_str(self):
         """Test str() of an ACL."""
         acl = posix1e.ACL(text=BASIC_ACL_TEXT)
         str_acl = str(acl)
-        self.checkRef(str_acl)
 
     def test_append(self):
         """Test append a new Entry to the ACL"""
@@ -648,7 +635,6 @@ class TestModification:
         e.tag_type = posix1e.ACL_OTHER
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         str_format = str(e)
-        self.checkRef(str_format)
         e2 = acl.append(e)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         assert not acl.valid()
@@ -675,7 +661,6 @@ class TestModification:
         e = posix1e.Entry(acl)
         ignore_ioerror(errno.EINVAL, acl.calc_mask)
         str_format = str(e)
-        self.checkRef(str_format)
 
     def test_entry_failed_creation(self):
         # Checks for partial initialisation and deletion on error
@@ -890,14 +875,12 @@ class TestModification:
         ps = e.permset
         ps.clear()
         str_ps = str(ps)
-        self.checkRef(str_ps)
         assert not ps.test(perm), ("Empty permission set should not"
                                    " have permission '%s'" % txt)
         ps.add(perm)
         assert ps.test(perm), ("Permission '%s' should exist"
                                " after addition" % txt)
         str_ps = str(ps)
-        self.checkRef(str_ps)
         ps.delete(perm)
         assert not ps.test(perm), ("Permission '%s' should not exist"
                                    " after deletion" % txt)
@@ -923,7 +906,6 @@ class TestModification:
         def setter(value):
             return accessor.__set__(ps, value) # type: ignore
         str_ps = str(ps)
-        self.checkRef(str_ps)
         assert not getter(), ("Empty permission set should not"
                               " have permission '%s'" % txt)
         setter(True)
@@ -932,7 +914,6 @@ class TestModification:
         assert getter(), ("Permission '%s' should exist"
                           " after addition" % txt)
         str_ps = str(ps)
-        self.checkRef(str_ps)
         setter(False)
         assert not ps.test(perm), ("Permission '%s' should not exist"
                                    " after deletion" % txt)

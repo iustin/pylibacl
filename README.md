@@ -39,11 +39,11 @@ Solaris does, but I can't test it.
 - Python 3.7 or newer. Python 2.4+ was supported in the 0.5.x branch,
   Python 3.4+ in the 0.6 branch.
 - Operating system:
-    - Linux, kernel v2.4 or newer, and the libacl library and
+  - Linux, kernel v2.4 or newer, and the libacl library and
       development packages (all modern distributions should have this,
       under various names); also the file-systems you use must have
       ACLs turned on, either as a compile or mount option.
-    - FreeBSD 7.0 or newer.
+  - FreeBSD 7.0 or newer.
 - The sphinx python module, for your python version, if building the
   documentation.
 

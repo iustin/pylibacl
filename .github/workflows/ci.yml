@@ -73,8 +73,11 @@ jobs:
       - name: Run tests
         run: python -m pytest tests
 
-      - name: Run doctests
+      - name: Run documentation doctests
         run: python -m doctest README.md
+
+      - name: Run module doctests
+        run: python -c 'import doctest; import posix1e; doctest.testmod(m=posix1e)'
 
       - name: Cleanup
         run: make clean

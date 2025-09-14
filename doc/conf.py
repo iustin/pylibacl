@@ -18,6 +18,11 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
 
+# Force import the module. ReadTheDocs seems to be flaky, and I wasn't able to
+# debug and find the root cause, but simply importing the module here seems to
+# fix it.
+import posix1e
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

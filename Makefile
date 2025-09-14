@@ -31,7 +31,7 @@ distcheck: dist
 	TDIR=$$(mktemp -d) && \
 	trap "rm -rf $$TDIR" EXIT; \
 	tar xzf dist/$(DISTFILE) -C $$TDIR && \
-	(cd $$TDIR/$(FULLVER) && make doc && make test && make dist) && \
+	(cd $$TDIR/$(FULLVER) && make doc && make fast-test && make test && make dist) && \
 	echo "All good, you can upload $(DISTFILE)!"
 
 test:
@@ -56,6 +56,7 @@ test:
 fast-test:
 	python3 setup.py build_ext -i
 	python3 -m pytest tests
+	python3 -m doctest README.md
 
 ci:
 	while inotifywait -e CLOSE_WRITE tests/test_*.py; do \

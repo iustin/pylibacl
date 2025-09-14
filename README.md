@@ -2,8 +2,9 @@
 
 This is a Python 3.7+ extension module allows you to manipulate the
 POSIX.1e Access Control Lists present in some OS/file-systems
-combinations. Note this module provides a Python interface to libacl
-it does not have the features of setfacl.
+combinations. Note this module provides a Python interface to the
+`libacl` library, and thus it does not have the features of the
+`setfacl` binary.
 
 Downloads: go to <https://pylibacl.k1024.org/downloads>. Latest
 version is 0.7.3. The source repository is at
@@ -60,16 +61,28 @@ or:
 - `pkg install py37-setuptools`
 
 ## Example
-```
-import posix1e
 
-# you must provide user, group and other permissions first and in that order
-acl = ACL(text = 'u:rx,g:r,o:-,u:123:r')
-# if you don't provide a mask you must explicity have it generated
-acl.calc_mask()
-acl.applyto('/foo/)
-# unlike setfacl there is no "d:u:123:r" call applyto the a different type
-acl.applyto('/foo', ACL.ACL_TYPE_DEFAULT)
+```python
+>>> import posix1e
+>>>
+>>> # On some operating systems,
+>>> # you must provide user, group and other permissions first and in that order.
+>>> acl = posix1e.ACL(text = 'u::rx,g::r,o:-')
+>>> acl.valid()
+True
+>>> # Adding an extended entry requires calculating the mask, if you don't pass it.
+>>> e = acl.append()
+>>> e.tag_type = posix1e.ACL_USER
+>>> e.qualifier = 0
+>>> acl.valid()
+False
+>>> acl.calc_mask()
+>>> acl.valid()
+True
+>>> # Note that unlike setfacl, there is no "d:u:123:r" option to change default ACLS.
+>>> # call 'applyto' with ACL_TYPE_DEFAULT, or delete_default.
+>>> # acl.applyto('/foo', posix1e.ACL_TYPE_DEFAULT)
+>>> # posix1e.delete_default('/foo')
 ```
 
 ## Security

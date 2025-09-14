@@ -73,6 +73,9 @@ jobs:
       - name: Run tests
         run: python -m pytest tests
 
+      - name: Run doctests
+        run: python -m doctest README.md
+
       - name: Cleanup
         run: make clean
 
